@@ -312,21 +312,21 @@ A single-user, browser-based Invoice App built with Vanilla JS + HTML + CSS. Dat
 
 ### Phase 2 — Core CRUD Views (Clients, Services, Time Entries)
 
-- [ ] **2.1 Create `js/views/clientsView.js`** — _Complexity: Medium_
+- [x] **2.1 Create `js/views/clientsView.js`** — _Complexity: Medium_ — completed by agent: 2025-12-10T21:45:00-06:00 — notes: implemented full CRUD with table, modal forms, validation
 
   - List all clients in a table
   - Add/Edit client form (modal)
   - Delete client with confirmation
   - **Acceptance:** Full CRUD for clients works via UI
 
-- [ ] **2.2 Create `js/views/servicesView.js`** — _Complexity: Medium_
+- [x] **2.2 Create `js/views/servicesView.js`** — _Complexity: Medium_ — completed by agent: 2025-12-10T21:45:00-06:00 — notes: implemented full CRUD with rate display and billable toggle
 
   - List all services in a table
   - Add/Edit service form (modal)
   - Delete service with confirmation
   - **Acceptance:** Full CRUD for services works via UI
 
-- [ ] **2.3 Create `js/views/timeEntriesView.js`** — _Complexity: Medium_
+- [x] **2.3 Create `js/views/timeEntriesView.js`** — _Complexity: Medium_ — completed by agent: 2025-12-10T21:45:00-06:00 — notes: implemented CRUD with filters, duration calculation, totals display
 
   - List time entries with filters (client, date range, billable)
   - Add/Edit time entry form (modal)
@@ -528,11 +528,11 @@ A single-user, browser-based Invoice App built with Vanilla JS + HTML + CSS. Dat
 | --------- | --------------- | -------------- |
 | Phase 0   | Complete        | 5/5            |
 | Phase 1   | Complete        | 7/7            |
-| Phase 2   | In Progress     | 3/6            |
+| Phase 2   | Complete        | 6/6            |
 | Phase 3   | Not Started     | 0/5            |
 | Phase 4   | Not Started     | 0/4            |
 | Phase 5   | In Progress     | 1/4            |
 | Phase 6   | Not Started     | 0/4            |
 | Phase 7   | In Progress     | 2/6            |
 | Phase 8   | Not Started     | 0/3            |
-| **Total** | **In Progress** | **18/44**      |
+| **Total** | **In Progress** | **21/44**      |
