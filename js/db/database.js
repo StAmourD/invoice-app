@@ -3,7 +3,7 @@
    ======================================== */
 
 const DB_NAME = 'InvoiceAppDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 /**
  * Database Manager
@@ -65,10 +65,25 @@ const Database = {
           timeEntryStore.createIndex('invoiceId', 'invoiceId', {
             unique: false,
           });
-          timeEntryStore.createIndex('startTime', 'startTime', {
+          timeEntryStore.createIndex('startDate', 'startDate', {
             unique: false,
           });
           console.log('Created timeEntries store');
+        } else if (event.oldVersion < 2) {
+          // Migration: remove old startTime index and add startDate index
+          if (db.objectStoreNames.contains('timeEntries')) {
+            try {
+              const timeEntryStore =
+                event.target.transaction.objectStore('timeEntries');
+              timeEntryStore.deleteIndex('startTime');
+              timeEntryStore.createIndex('startDate', 'startDate', {
+                unique: false,
+              });
+              console.log('Migrated timeEntries store to v2');
+            } catch (e) {
+              console.error('Error during migration:', e);
+            }
+          }
         }
 
         // Invoices store

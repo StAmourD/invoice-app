@@ -506,7 +506,7 @@ const InvoicesView = {
     const entryAmounts = {};
     timeEntries.forEach((entry) => {
       const service = services.find((s) => s.id === entry.serviceId);
-      const hours = calculateDuration(entry.startTime, entry.endTime);
+      const hours = entry.hours;
       const amount = service ? hours * service.rate : 0;
       entryAmounts[entry.id] = amount;
       selectedTotal += amount;
@@ -520,10 +520,7 @@ const InvoicesView = {
                     const service = services.find(
                       (s) => s.id === entry.serviceId
                     );
-                    const hours = calculateDuration(
-                      entry.startTime,
-                      entry.endTime
-                    );
+                    const hours = entry.hours;
                     const amount = entryAmounts[entry.id];
 
                     return `
@@ -538,7 +535,7 @@ const InvoicesView = {
                                   entry.description || 'No description'
                                 )}</div>
                                 <div class="selection-item-subtitle">
-                                    ${formatDate(entry.startTime)} • ${
+                                    ${formatDate(entry.startDate)} • ${
                       service ? escapeHtml(service.name) : 'Unknown'
                     } • ${formatHours(hours)}
                                 </div>
@@ -775,10 +772,7 @@ const InvoicesView = {
                                 const service = services.find(
                                   (s) => s.id === entry.serviceId
                                 );
-                                const hours = calculateDuration(
-                                  entry.startTime,
-                                  entry.endTime
-                                );
+                                const hours = entry.hours;
                                 const amount = service
                                   ? hours * service.rate
                                   : 0;

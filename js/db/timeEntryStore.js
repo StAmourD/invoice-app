@@ -126,9 +126,9 @@ const TimeEntryStore = {
       const request = store.getAll();
 
       request.onsuccess = () => {
-        // Sort by start time descending
+        // Sort by start date descending
         const entries = request.result.sort(
-          (a, b) => new Date(b.startTime) - new Date(a.startTime)
+          (a, b) => new Date(b.startDate) - new Date(a.startDate)
         );
         resolve(entries);
       };
@@ -184,7 +184,7 @@ const TimeEntryStore = {
     end.setHours(23, 59, 59, 999);
 
     return entries.filter((e) => {
-      const entryDate = new Date(e.startTime);
+      const entryDate = new Date(e.startDate);
       return entryDate >= start && entryDate <= end;
     });
   },

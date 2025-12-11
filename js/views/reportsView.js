@@ -190,7 +190,7 @@ const ReportsView = {
       .map((entry) => {
         const client = clientMap.get(entry.clientId);
         const service = serviceMap.get(entry.serviceId);
-        const hours = calculateDuration(entry.startTime, entry.endTime);
+        const hours = entry.hours;
         const rate = service?.rate || 0;
         const amount = hours * rate;
 
@@ -203,7 +203,7 @@ const ReportsView = {
 
         return `
         <tr>
-          <td>${formatDate(entry.startTime)}</td>
+          <td>${formatDate(entry.startDate)}</td>
           <td>${escapeHtml(client?.name || 'Unknown')}</td>
           <td>${escapeHtml(service?.name || 'Unknown')}</td>
           <td>${escapeHtml(entry.description)}</td>
@@ -253,12 +253,10 @@ const ReportsView = {
     return this.timeEntries.filter((entry) => {
       // Date range filter
       if (this.timeFilters.startDate) {
-        const entryDate = new Date(entry.startTime).toISOString().split('T')[0];
-        if (entryDate < this.timeFilters.startDate) return false;
+        if (entry.startDate < this.timeFilters.startDate) return false;
       }
       if (this.timeFilters.endDate) {
-        const entryDate = new Date(entry.startTime).toISOString().split('T')[0];
-        if (entryDate > this.timeFilters.endDate) return false;
+        if (entry.startDate > this.timeFilters.endDate) return false;
       }
 
       // Client filter
@@ -600,12 +598,12 @@ const ReportsView = {
     const exportData = filtered.map((entry) => {
       const client = clientMap.get(entry.clientId);
       const service = serviceMap.get(entry.serviceId);
-      const hours = calculateDuration(entry.startTime, entry.endTime);
+      const hours = entry.hours;
       const rate = service?.rate || 0;
       const amount = hours * rate;
 
       return {
-        date: formatDate(entry.startTime),
+        date: formatDate(entry.startDate),
         client: client?.name || 'Unknown',
         service: service?.name || 'Unknown',
         description: entry.description,

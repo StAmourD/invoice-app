@@ -174,7 +174,7 @@ const PDFGenerator = {
       let rowCount = 0;
       for (const entry of timeEntries) {
         const service = serviceMap.get(entry.serviceId);
-        const hours = calculateDuration(entry.startTime, entry.endTime);
+        const hours = entry.hours;
         const rate = service?.rate || 0;
         const amount = hours * rate;
 

@@ -9,7 +9,7 @@ const TimeEntriesView = {
   currentEntries: [],
   clients: [],
   services: [],
-  sortColumn: 'startTime',
+  sortColumn: 'startDate',
   sortDirection: 'desc',
   filters: {
     clientId: '',
@@ -137,13 +137,13 @@ const TimeEntriesView = {
 
     if (this.filters.startDate) {
       const start = new Date(this.filters.startDate);
-      filtered = filtered.filter((e) => new Date(e.startTime) >= start);
+      filtered = filtered.filter((e) => new Date(e.startDate) >= start);
     }
 
     if (this.filters.endDate) {
       const end = new Date(this.filters.endDate);
       end.setHours(23, 59, 59, 999);
-      filtered = filtered.filter((e) => new Date(e.startTime) <= end);
+      filtered = filtered.filter((e) => new Date(e.startDate) <= end);
     }
 
     if (this.filters.billableOnly) {
@@ -159,10 +159,10 @@ const TimeEntriesView = {
   renderTable(entries) {
     const columns = [
       {
-        key: 'startTime',
+        key: 'startDate',
         label: 'Date',
         sortable: true,
-        render: (entry) => formatDate(entry.startTime),
+        render: (entry) => formatDate(entry.startDate),
       },
       {
         key: 'clientId',
@@ -189,13 +189,12 @@ const TimeEntriesView = {
         render: (entry) => escapeHtml(entry.description || ''),
       },
       {
-        key: 'duration',
+        key: 'hours',
         label: 'Hours',
         sortable: false,
         className: 'number',
         render: (entry) => {
-          const hours = calculateDuration(entry.startTime, entry.endTime);
-          return formatHours(hours);
+          return formatHours(entry.hours);
         },
       },
       {
@@ -205,8 +204,7 @@ const TimeEntriesView = {
         className: 'number',
         render: (entry) => {
           const service = this.services.find((s) => s.id === entry.serviceId);
-          const hours = calculateDuration(entry.startTime, entry.endTime);
-          const amount = service ? hours * service.rate : 0;
+          const amount = service ? entry.hours * service.rate : 0;
           return formatCurrency(amount);
         },
       },
@@ -250,11 +248,10 @@ const TimeEntriesView = {
     let totalHours = 0;
     let totalAmount = 0;
     sortedData.forEach((entry) => {
-      const hours = calculateDuration(entry.startTime, entry.endTime);
-      totalHours += hours;
+      totalHours += entry.hours;
       const service = this.services.find((s) => s.id === entry.serviceId);
       if (service) {
-        totalAmount += hours * service.rate;
+        totalAmount += entry.hours * service.rate;
       }
     });
 
@@ -414,29 +411,28 @@ const TimeEntriesView = {
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="entry-start" class="form-label required">Start Time</label>
+                        <label for="entry-start-date" class="form-label required">Start Date</label>
                         <input 
-                            type="datetime-local" 
-                            id="entry-start" 
+                            type="date" 
+                            id="entry-start-date" 
                             class="form-input" 
                             value="${
-                              entry
-                                ? formatDateTimeForInput(entry.startTime)
-                                : ''
+                              entry ? formatDateForInput(entry.startDate) : ''
                             }"
                             required
                         >
                     </div>
 
                     <div class="form-group">
-                        <label for="entry-end" class="form-label required">End Time</label>
+                        <label for="entry-hours" class="form-label required">Hours</label>
                         <input 
-                            type="datetime-local" 
-                            id="entry-end" 
+                            type="number" 
+                            id="entry-hours" 
                             class="form-input" 
-                            value="${
-                              entry ? formatDateTimeForInput(entry.endTime) : ''
-                            }"
+                            placeholder="0.00"
+                            min="0"
+                            step="0.01"
+                            value="${entry ? entry.hours.toFixed(2) : ''}"
                             required
                         >
                     </div>
@@ -496,11 +492,12 @@ const TimeEntriesView = {
    * Save time entry (create or update)
    */
   async saveEntry(existingEntry) {
+    const hoursValue = parseFloat(document.getElementById('entry-hours').value);
     const formData = {
       clientId: document.getElementById('entry-client').value,
       serviceId: document.getElementById('entry-service').value,
-      startTime: document.getElementById('entry-start').value,
-      endTime: document.getElementById('entry-end').value,
+      startDate: document.getElementById('entry-start-date').value,
+      hours: hoursValue,
       description: document.getElementById('entry-description').value.trim(),
       billable: document.getElementById('entry-billable').checked,
     };
@@ -509,17 +506,20 @@ const TimeEntriesView = {
     if (
       !formData.clientId ||
       !formData.serviceId ||
-      !formData.startTime ||
-      !formData.endTime
+      !formData.startDate ||
+      !formData.hours
     ) {
       Toast.error('Validation Error', 'Please fill in all required fields');
       return;
     }
 
-    const start = new Date(formData.startTime);
-    const end = new Date(formData.endTime);
-    if (end <= start) {
-      Toast.error('Validation Error', 'End time must be after start time');
+    if (formData.hours <= 0) {
+      Toast.error('Validation Error', 'Hours must be greater than 0');
+      return;
+    }
+
+    if (!/^\d+(\.\d{1,2})?$/.test(formData.hours.toFixed(2))) {
+      Toast.error('Validation Error', 'Hours must be in format #.##');
       return;
     }
 
