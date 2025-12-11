@@ -1,0 +1,192 @@
+/* ========================================
+   Invoice App - IndexedDB Database
+   ======================================== */
+
+const DB_NAME = 'InvoiceAppDB';
+const DB_VERSION = 1;
+
+/**
+ * Database Manager
+ */
+const Database = {
+  db: null,
+
+  /**
+   * Initialize the database
+   * @returns {Promise<IDBDatabase>}
+   */
+  init() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onerror = (event) => {
+        console.error('Database error:', event.target.error);
+        reject(event.target.error);
+      };
+
+      request.onsuccess = (event) => {
+        this.db = event.target.result;
+        console.log('Database opened successfully');
+        resolve(this.db);
+      };
+
+      request.onupgradeneeded = (event) => {
+        console.log('Database upgrade needed');
+        const db = event.target.result;
+
+        // Clients store
+        if (!db.objectStoreNames.contains('clients')) {
+          const clientStore = db.createObjectStore('clients', {
+            keyPath: 'id',
+          });
+          clientStore.createIndex('name', 'name', { unique: false });
+          clientStore.createIndex('email', 'email', { unique: false });
+          console.log('Created clients store');
+        }
+
+        // Services store
+        if (!db.objectStoreNames.contains('services')) {
+          const serviceStore = db.createObjectStore('services', {
+            keyPath: 'id',
+          });
+          serviceStore.createIndex('name', 'name', { unique: false });
+          console.log('Created services store');
+        }
+
+        // Time entries store
+        if (!db.objectStoreNames.contains('timeEntries')) {
+          const timeEntryStore = db.createObjectStore('timeEntries', {
+            keyPath: 'id',
+          });
+          timeEntryStore.createIndex('clientId', 'clientId', { unique: false });
+          timeEntryStore.createIndex('serviceId', 'serviceId', {
+            unique: false,
+          });
+          timeEntryStore.createIndex('invoiceId', 'invoiceId', {
+            unique: false,
+          });
+          timeEntryStore.createIndex('startTime', 'startTime', {
+            unique: false,
+          });
+          console.log('Created timeEntries store');
+        }
+
+        // Invoices store
+        if (!db.objectStoreNames.contains('invoices')) {
+          const invoiceStore = db.createObjectStore('invoices', {
+            keyPath: 'id',
+          });
+          invoiceStore.createIndex('clientId', 'clientId', { unique: false });
+          invoiceStore.createIndex('invoiceNumber', 'invoiceNumber', {
+            unique: true,
+          });
+          invoiceStore.createIndex('issueDate', 'issueDate', { unique: false });
+          invoiceStore.createIndex('paid', 'paid', { unique: false });
+          console.log('Created invoices store');
+        }
+
+        // Settings store
+        if (!db.objectStoreNames.contains('settings')) {
+          db.createObjectStore('settings', { keyPath: 'key' });
+          console.log('Created settings store');
+        }
+      };
+    });
+  },
+
+  /**
+   * Get the database instance
+   * @returns {IDBDatabase}
+   */
+  getDB() {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+    return this.db;
+  },
+
+  /**
+   * Export all data from the database
+   * @returns {Promise<object>}
+   */
+  async exportAll() {
+    const data = {
+      exportedAt: getISOTimestamp(),
+      version: DB_VERSION,
+      clients: await ClientStore.getAll(),
+      services: await ServiceStore.getAll(),
+      timeEntries: await TimeEntryStore.getAll(),
+      invoices: await InvoiceStore.getAll(),
+      settings: await SettingsStore.getAll(),
+    };
+    return data;
+  },
+
+  /**
+   * Import data into the database
+   * @param {object} data - Data to import
+   * @param {boolean} clearExisting - Whether to clear existing data first
+   * @returns {Promise<void>}
+   */
+  async importAll(data, clearExisting = true) {
+    if (clearExisting) {
+      await this.clearAll();
+    }
+
+    // Import in order to handle dependencies
+    if (data.settings) {
+      for (const setting of data.settings) {
+        await SettingsStore.set(setting.key, setting.value);
+      }
+    }
+
+    if (data.clients) {
+      for (const client of data.clients) {
+        await ClientStore.add(client);
+      }
+    }
+
+    if (data.services) {
+      for (const service of data.services) {
+        await ServiceStore.add(service);
+      }
+    }
+
+    if (data.timeEntries) {
+      for (const entry of data.timeEntries) {
+        await TimeEntryStore.add(entry);
+      }
+    }
+
+    if (data.invoices) {
+      for (const invoice of data.invoices) {
+        await InvoiceStore.add(invoice);
+      }
+    }
+  },
+
+  /**
+   * Clear all data from the database
+   * @returns {Promise<void>}
+   */
+  async clearAll() {
+    const stores = [
+      'clients',
+      'services',
+      'timeEntries',
+      'invoices',
+      'settings',
+    ];
+
+    for (const storeName of stores) {
+      await new Promise((resolve, reject) => {
+        const transaction = this.db.transaction([storeName], 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.clear();
+
+        request.onsuccess = () => resolve();
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
+  },
+};

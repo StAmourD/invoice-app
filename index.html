@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice App</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/print.css" media="print">
+</head>
+
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <h1 class="logo">📄 Invoice App</h1>
+      </div>
+      <ul class="nav-menu">
+        <li>
+          <a href="#/dashboard" class="nav-link" data-view="dashboard">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="#/clients" class="nav-link" data-view="clients">
+            <span class="nav-icon">👥</span>
+            <span class="nav-text">Clients</span>
+          </a>
+        </li>
+        <li>
+          <a href="#/services" class="nav-link" data-view="services">
+            <span class="nav-icon">🛠️</span>
+            <span class="nav-text">Services</span>
+          </a>
+        </li>
+        <li>
+          <a href="#/time-entries" class="nav-link" data-view="time-entries">
+            <span class="nav-icon">⏱️</span>
+            <span class="nav-text">Time Entries</span>
+          </a>
+        </li>
+        <li>
+          <a href="#/invoices" class="nav-link" data-view="invoices">
+            <span class="nav-icon">📃</span>
+            <span class="nav-text">Invoices</span>
+          </a>
+        </li>
+        <li>
+          <a href="#/reports" class="nav-link" data-view="reports">
+            <span class="nav-icon">📈</span>
+            <span class="nav-text">Reports</span>
+          </a>
+        </li>
+        <li>
+          <a href="#/settings" class="nav-link" data-view="settings">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">Settings</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <header class="content-header">
+        <h2 id="page-title">Dashboard</h2>
+        <div id="header-actions"></div>
+      </header>
+      <div id="main-view" class="content-body">
+        <!-- Dynamic content loaded here -->
+        <p>Loading...</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Container -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div id="modal-container" class="modal-container">
+      <div class="modal-header">
+        <h3 id="modal-title">Modal Title</h3>
+        <button id="modal-close" class="modal-close" aria-label="Close modal">&times;</button>
+      </div>
+      <div id="modal-content" class="modal-content">
+        <!-- Modal content loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="js/utils/helpers.js"></script>
+  <script src="js/db/database.js"></script>
+  <script src="js/db/settingsStore.js"></script>
+  <script src="js/db/clientStore.js"></script>
+  <script src="js/db/serviceStore.js"></script>
+  <script src="js/db/timeEntryStore.js"></script>
+  <script src="js/db/invoiceStore.js"></script>
+  <script src="js/components/modal.js"></script>
+  <script src="js/components/table.js"></script>
+  <script src="js/components/toast.js"></script>
+  <script src="js/views/dashboardView.js"></script>
+  <script src="js/views/clientsView.js"></script>
+  <script src="js/views/servicesView.js"></script>
+  <script src="js/views/timeEntriesView.js"></script>
+  <script src="js/views/invoicesView.js"></script>
+  <script src="js/views/reportsView.js"></script>
+  <script src="js/views/settingsView.js"></script>
+  <script src="js/utils/backup.js"></script>
+  <script src="js/utils/pdfGenerator.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>
