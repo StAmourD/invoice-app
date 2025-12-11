@@ -352,13 +352,13 @@ A single-user, browser-based Invoice App built with Vanilla JS + HTML + CSS. Dat
 
 ### Phase 3 — Invoices: Creation, Editing, List, Mark Paid
 
-- [ ] **3.1 Create `js/views/invoicesView.js`** — _Complexity: High_
+- [x] **3.1 Create `js/views/invoicesView.js`** — _Complexity: High_ — completed by agent: 2025-12-10T22:00:00-06:00 — notes: implemented invoice list with filters, status badges, and paid/unpaid toggle
 
   - List all invoices with status badges (paid/unpaid/overdue)
   - Filter by client, date range, paid status
   - **Acceptance:** Invoice list displays correctly
 
-- [ ] **3.2 Create invoice creation flow** — _Complexity: High_
+- [x] **3.2 Create invoice creation flow** — _Complexity: High_ — completed by agent: 2025-12-10T22:00:00-06:00 — notes: implemented client selection, unbilled time entry selection, auto-calculation, and invoice number generation
 
   - Select client, then select unbilled time entries
   - Auto-calculate total
@@ -366,20 +366,20 @@ A single-user, browser-based Invoice App built with Vanilla JS + HTML + CSS. Dat
   - Generate invoice number (INV-YYYY-NNN)
   - **Acceptance:** Can create invoice from unbilled entries
 
-- [ ] **3.3 Create invoice edit functionality** — _Complexity: Medium_
+- [x] **3.3 Create invoice edit functionality** — _Complexity: Medium_ — completed by agent: 2025-12-10T22:00:00-06:00 — notes: implemented edit due date modal with validation
 
   - Edit due date
   - View line items (read-only after creation)
   - **Acceptance:** Can edit due date on existing invoice
 
-- [ ] **3.4 Create invoice detail view** — _Complexity: Medium_
+- [x] **3.4 Create invoice detail view** — _Complexity: Medium_ — completed by agent: 2025-12-10T22:00:00-06:00 — notes: implemented full invoice preview with print support and PDF download button
 
   - Show full invoice with all line items
   - Print button, PDF download button
   - Mark paid/unpaid button
   - **Acceptance:** Invoice detail shows all information
 
-- [ ] **3.5 Link time entries to invoice** — _Complexity: Medium_
+- [x] **3.5 Link time entries to invoice** — _Complexity: Medium_ — completed by agent: 2025-12-10T22:00:00-06:00 — notes: time entries are linked on creation and unlinked on deletion via TimeEntryStore methods
   - When invoice created, update time entries with invoiceId
   - When invoice deleted, clear invoiceId from time entries
   - **Acceptance:** Time entries correctly linked/unlinked
@@ -529,10 +529,10 @@ A single-user, browser-based Invoice App built with Vanilla JS + HTML + CSS. Dat
 | Phase 0   | Complete        | 5/5            |
 | Phase 1   | Complete        | 7/7            |
 | Phase 2   | Complete        | 6/6            |
-| Phase 3   | Not Started     | 0/5            |
+| Phase 3   | Complete        | 5/5            |
 | Phase 4   | Not Started     | 0/4            |
 | Phase 5   | In Progress     | 1/4            |
 | Phase 6   | Not Started     | 0/4            |
 | Phase 7   | In Progress     | 2/6            |
 | Phase 8   | Not Started     | 0/3            |
-| **Total** | **In Progress** | **21/44**      |
+| **Total** | **In Progress** | **26/44**      |
