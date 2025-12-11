@@ -20,6 +20,10 @@ const App = {
       await Database.init();
       console.log('Database initialized');
 
+      // Initialize backup system
+      await Backup.init();
+      console.log('Backup system initialized');
+
       // Seed sample data if empty
       await this.seedDataIfEmpty();
 

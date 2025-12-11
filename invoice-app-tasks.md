@@ -440,13 +440,13 @@ A single-user, browser-based Invoice App built with Vanilla JS + HTML + CSS. Dat
 
 ### Phase 6 — Backup/Restore + File System Access
 
-- [ ] **6.1 Create `js/utils/backup.js`** — _Complexity: High_
+- [x] **6.1 Create `js/utils/backup.js`** — _Complexity: High_ — completed by agent: 2025-12-10T23:00:00-06:00 — notes: implemented full backup system with exportData(), importData() with validation, downloadBackup(), uploadBackup(), and status tracking
 
   - Export all data to JSON
   - Import data from JSON (with validation)
   - **Acceptance:** Can export and reimport data
 
-- [ ] **6.2 Implement File System Access API** — _Complexity: High_
+- [x] **6.2 Implement File System Access API** — _Complexity: High_ — completed by agent: 2025-12-10T23:00:00-06:00 — notes: implemented File System Access API with selectBackupFolder(), autoSave() on data changes, permission handling, and folder handle persistence in settings
 
   - Prompt user to select backup folder
   - Save folder handle in IndexedDB
@@ -454,7 +454,7 @@ A single-user, browser-based Invoice App built with Vanilla JS + HTML + CSS. Dat
   - Filename: `backup-{ISO-timestamp}.json`
   - **Acceptance:** Backup auto-saves to selected folder
 
-- [ ] **6.3 Create `js/views/settingsView.js`** — _Complexity: Medium_
+- [x] **6.3 Create `js/views/settingsView.js`** — _Complexity: Medium_ — completed by agent: 2025-12-10T23:00:00-06:00 — notes: implemented full settings view with company info form (name, address, email), backup folder selection/management, manual backup/restore, clear all data with confirmation, and backup status display
 
   - Company info form (name, address, email)
   - Select backup folder button
@@ -462,7 +462,7 @@ A single-user, browser-based Invoice App built with Vanilla JS + HTML + CSS. Dat
   - Clear all data button (with confirmation)
   - **Acceptance:** Settings save and persist
 
-- [ ] **6.4 Add fallback for unsupported browsers** — _Complexity: Low_
+- [x] **6.4 Add fallback for unsupported browsers** — _Complexity: Low_ — completed by agent: 2025-12-10T23:00:00-06:00 — notes: added browser detection for File System Access API, conditional UI rendering with fallback to manual download/upload, and warning messages for unsupported browsers
   - If File System Access API unavailable, use download/upload
   - Show warning message
   - **Acceptance:** App works in Firefox (with fallback)
@@ -532,7 +532,7 @@ A single-user, browser-based Invoice App built with Vanilla JS + HTML + CSS. Dat
 | Phase 3   | Complete        | 5/5            |
 | Phase 4   | Complete        | 4/4            |
 | Phase 5   | Complete        | 4/4            |
-| Phase 6   | Not Started     | 0/4            |
+| Phase 6   | Complete        | 4/4            |
 | Phase 7   | In Progress     | 2/6            |
 | Phase 8   | Not Started     | 0/3            |
-| **Total** | **In Progress** | **34/44**      |
+| **Total** | **In Progress** | **38/44**      |
