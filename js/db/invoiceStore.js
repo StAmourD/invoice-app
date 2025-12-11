@@ -23,6 +23,8 @@ const InvoiceStore = {
         ...invoice,
         id: invoice.id || generateUUID(),
         paid: invoice.paid || false,
+        version: invoice.version || null,
+        timeEntryIds: invoice.timeEntryIds || [],
         createdAt: invoice.createdAt || getISOTimestamp(),
         updatedAt: getISOTimestamp(),
       };
@@ -227,6 +229,88 @@ const InvoiceStore = {
     }
 
     return generateInvoiceNumber(maxNum + 1);
+  },
+
+  /**
+   * Increment invoice version letter (null -> A -> B -> C, etc.)
+   * @param {string} currentVersion - Current version letter (or null/empty for first version)
+   * @returns {string} Next version letter
+   */
+  incrementVersion(currentVersion = null) {
+    if (!currentVersion || currentVersion === '') {
+      return 'A';
+    }
+    const charCode = currentVersion.charCodeAt(0);
+    if (charCode >= 90) {
+      // Z is 90, wrap around or extend
+      return 'A';
+    }
+    return String.fromCharCode(charCode + 1);
+  },
+
+  /**
+   * Add time entries to an invoice
+   * @param {string} invoiceId - Invoice id
+   * @param {array} timeEntryIds - Array of time entry ids to add
+   * @returns {Promise<object>} Updated invoice
+   */
+  async addTimeEntries(invoiceId, timeEntryIds) {
+    const invoice = await this.getById(invoiceId);
+    if (!invoice) {
+      throw new Error('Invoice not found');
+    }
+
+    // Merge new entries with existing ones (avoid duplicates)
+    const existingIds = new Set(invoice.timeEntryIds || []);
+    const newIds = timeEntryIds.filter((id) => !existingIds.has(id));
+
+    if (newIds.length === 0) {
+      return invoice; // No new entries to add
+    }
+
+    // Update version
+    const updatedInvoice = await this.update({
+      ...invoice,
+      timeEntryIds: [...(invoice.timeEntryIds || []), ...newIds],
+      version: this.incrementVersion(invoice.version),
+    });
+
+    // Link time entries to invoice
+    await TimeEntryStore.linkToInvoice(newIds, invoiceId);
+
+    return updatedInvoice;
+  },
+
+  /**
+   * Remove time entries from an invoice
+   * @param {string} invoiceId - Invoice id
+   * @param {array} timeEntryIds - Array of time entry ids to remove
+   * @returns {Promise<object>} Updated invoice
+   */
+  async removeTimeEntries(invoiceId, timeEntryIds) {
+    const invoice = await this.getById(invoiceId);
+    if (!invoice) {
+      throw new Error('Invoice not found');
+    }
+
+    const idsToRemove = new Set(timeEntryIds);
+    const remainingIds = (invoice.timeEntryIds || []).filter(
+      (id) => !idsToRemove.has(id)
+    );
+
+    // Unlink time entries from invoice
+    for (const id of timeEntryIds) {
+      await TimeEntryStore.unlinkEntry(id);
+    }
+
+    // Update invoice
+    const updatedInvoice = await this.update({
+      ...invoice,
+      timeEntryIds: remainingIds,
+      version: this.incrementVersion(invoice.version),
+    });
+
+    return updatedInvoice;
   },
 
   /**

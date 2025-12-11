@@ -206,6 +206,19 @@ const TimeEntryStore = {
   },
 
   /**
+   * Unlink a single time entry from an invoice
+   * @param {string} entryId - Time entry id
+   * @returns {Promise<void>}
+   */
+  async unlinkEntry(entryId) {
+    const entry = await this.getById(entryId);
+    if (entry) {
+      entry.invoiceId = null;
+      await this.update(entry);
+    }
+  },
+
+  /**
    * Unlink time entries from an invoice
    * @param {string} invoiceId - Invoice id
    * @returns {Promise<void>}

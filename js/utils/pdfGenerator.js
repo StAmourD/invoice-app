@@ -87,7 +87,10 @@ const PDFGenerator = {
 
       doc.setFontSize(11);
       doc.setFont('helvetica', 'normal');
-      doc.text(invoice.invoiceNumber, pageWidth - margin, yPosition, {
+      const invoiceNumberWithVersion = invoice.version
+        ? `${invoice.invoiceNumber}-${invoice.version}`
+        : invoice.invoiceNumber;
+      doc.text(invoiceNumberWithVersion, pageWidth - margin, yPosition, {
         align: 'right',
       });
       yPosition += 15;
@@ -138,10 +141,11 @@ const PDFGenerator = {
       // Line items table
       const tableStartY = yPosition;
       const colWidths = {
-        description: contentWidth * 0.4,
-        service: contentWidth * 0.2,
-        hours: contentWidth * 0.15,
-        rate: contentWidth * 0.12,
+        date: contentWidth * 0.12,
+        description: contentWidth * 0.42,
+        service: contentWidth * 0.13,
+        hours: contentWidth * 0.1,
+        rate: contentWidth * 0.1,
         amount: contentWidth * 0.13,
       };
 
@@ -154,6 +158,8 @@ const PDFGenerator = {
       doc.setFont('helvetica', 'bold');
 
       let xPos = margin + 2;
+      doc.text('Date', xPos, yPosition + 6.5);
+      xPos += colWidths.date;
       doc.text('Description', xPos, yPosition + 6.5);
       xPos += colWidths.description;
       doc.text('Service', xPos, yPosition + 6.5);
@@ -162,7 +168,9 @@ const PDFGenerator = {
       xPos += colWidths.hours;
       doc.text('Rate', xPos, yPosition + 6.5);
       xPos += colWidths.rate;
-      doc.text('Amount', xPos, yPosition + 6.5, { align: 'right' });
+      doc.text('Amount', xPos + colWidths.amount - 2, yPosition + 6.5, {
+        align: 'right',
+      });
 
       yPosition += 10;
       doc.setTextColor(0, 0, 0); // Reset to black
@@ -191,6 +199,10 @@ const PDFGenerator = {
         }
 
         xPos = margin + 2;
+
+        // Date
+        doc.text(formatDate(entry.startDate), xPos, yPosition + 3);
+        xPos += colWidths.date;
 
         // Description (with word wrap if needed)
         const descLines = doc.splitTextToSize(
