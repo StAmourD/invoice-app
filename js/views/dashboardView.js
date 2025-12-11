@@ -14,8 +14,15 @@ const DashboardView = {
    * Render the dashboard view
    */
   async render(container, headerActions) {
-    // Clear header actions
-    headerActions.innerHTML = '';
+    // Add quick action buttons
+    headerActions.innerHTML = `
+      <button class="btn btn-primary" id="new-time-entry-btn">
+        <span>+</span> New Time Entry
+      </button>
+      <button class="btn btn-secondary" id="new-invoice-btn">
+        <span>+</span> New Invoice
+      </button>
+    `;
 
     // Show loading state
     Spinner.show(container, 'Loading dashboard...');
@@ -214,6 +221,18 @@ const DashboardView = {
    * Setup event listeners
    */
   setupEventListeners(container) {
+    // New Time Entry button
+    document
+      .getElementById('new-time-entry-btn')
+      .addEventListener('click', () => {
+        window.location.hash = '#/time-entries/new';
+      });
+
+    // New Invoice button
+    document.getElementById('new-invoice-btn').addEventListener('click', () => {
+      window.location.hash = '#/invoices/new';
+    });
+
     // Toggle paid status buttons
     container.querySelectorAll('.toggle-paid-btn').forEach((btn) => {
       btn.addEventListener('click', async (e) => {

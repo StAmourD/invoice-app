@@ -401,6 +401,16 @@ const InvoicesView = {
 
     // Load data
     const clients = await ClientStore.getAll();
+    const invoices = await InvoiceStore.getAll();
+
+    // Find the most recent invoice's client
+    let defaultClientId = '';
+    if (invoices.length > 0) {
+      const mostRecentInvoice = invoices.sort(
+        (a, b) => new Date(b.issueDate) - new Date(a.issueDate)
+      )[0];
+      defaultClientId = mostRecentInvoice.clientId;
+    }
 
     if (clients.length === 0) {
       container.innerHTML = `
@@ -427,9 +437,9 @@ const InvoicesView = {
                             ${clients
                               .map(
                                 (c) => `
-                                <option value="${c.id}">${escapeHtml(
-                                  c.name
-                                )}</option>
+                                <option value="${c.id}" ${
+                                  c.id === defaultClientId ? 'selected' : ''
+                                }>${escapeHtml(c.name)}</option>
                             `
                               )
                               .join('')}
@@ -453,6 +463,11 @@ const InvoicesView = {
             'none';
         }
       });
+
+    // If a default client was selected, show their time entries
+    if (defaultClientId) {
+      await this.showTimeEntriesForClient(defaultClientId, container);
+    }
   },
 
   /**

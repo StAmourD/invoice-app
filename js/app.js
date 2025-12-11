@@ -125,8 +125,13 @@ const App = {
           break;
 
         case 'time-entries':
-          pageTitle.textContent = 'Time Entries';
-          await TimeEntriesView.render(mainView, headerActions);
+          if (params[0] === 'new') {
+            pageTitle.textContent = 'Time Entries';
+            await TimeEntriesView.render(mainView, headerActions, true);
+          } else {
+            pageTitle.textContent = 'Time Entries';
+            await TimeEntriesView.render(mainView, headerActions);
+          }
           break;
 
         case 'invoices':

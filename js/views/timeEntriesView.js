@@ -20,11 +20,14 @@ const TimeEntriesView = {
   /**
    * Render the time entries view
    */
-  async render(container, headerActions) {
-    // Add "New Time Entry" button to header
+  async render(container, headerActions, openModal = false) {
+    // Add buttons to header
     headerActions.innerHTML = `
             <button class="btn btn-primary" id="add-entry-btn">
                 <span>+</span> New Time Entry
+            </button>
+            <button class="btn btn-secondary" id="new-invoice-btn">
+                <span>+</span> New Invoice
             </button>
         `;
 
@@ -43,8 +46,19 @@ const TimeEntriesView = {
     // Setup event listeners
     this.setupEventListeners(container);
 
+    // Open modal if requested
+    if (openModal) {
+      setTimeout(() => {
+        this.showEntryModal();
+      }, 100);
+    }
+
     document.getElementById('add-entry-btn').addEventListener('click', () => {
       this.showEntryModal();
+    });
+
+    document.getElementById('new-invoice-btn').addEventListener('click', () => {
+      window.location.hash = '#/invoices/new';
     });
   },
 
@@ -345,6 +359,17 @@ const TimeEntriesView = {
     const isEdit = !!entry;
     const title = isEdit ? 'Edit Time Entry' : 'New Time Entry';
 
+    // For new entries, get defaults from most recent entry
+    let defaultClientId = '';
+    let defaultServiceId = '';
+    let defaultStartDate = formatDateForInput(new Date());
+
+    if (!isEdit && this.currentEntries.length > 0) {
+      const mostRecent = this.currentEntries[0];
+      defaultClientId = mostRecent.clientId;
+      defaultServiceId = mostRecent.serviceId;
+    }
+
     const content = `
             <form id="entry-form">
                 <div class="form-group">
@@ -355,7 +380,10 @@ const TimeEntriesView = {
                           .map(
                             (c) => `
                             <option value="${c.id}" ${
-                              entry && entry.clientId === c.id ? 'selected' : ''
+                              (entry && entry.clientId === c.id) ||
+                              (!entry && c.id === defaultClientId)
+                                ? 'selected'
+                                : ''
                             }>
                                 ${escapeHtml(c.name)}
                             </option>
@@ -373,7 +401,8 @@ const TimeEntriesView = {
                           .map(
                             (s) => `
                             <option value="${s.id}" ${
-                              entry && entry.serviceId === s.id
+                              (entry && entry.serviceId === s.id) ||
+                              (!entry && s.id === defaultServiceId)
                                 ? 'selected'
                                 : ''
                             }>
@@ -395,7 +424,9 @@ const TimeEntriesView = {
                             id="entry-start-date" 
                             class="form-input" 
                             value="${
-                              entry ? formatDateForInput(entry.startDate) : ''
+                              entry
+                                ? formatDateForInput(entry.startDate)
+                                : defaultStartDate
                             }"
                             required
                         >
@@ -452,6 +483,16 @@ const TimeEntriesView = {
         `;
 
     Modal.open({ title, content, size: 'lg' });
+
+    // Focus on hours field for new entries
+    if (!isEdit) {
+      setTimeout(() => {
+        const hoursField = document.getElementById('entry-hours');
+        if (hoursField) {
+          hoursField.focus();
+        }
+      }, 100);
+    }
 
     // Setup form submission
     const form = document.getElementById('entry-form');
