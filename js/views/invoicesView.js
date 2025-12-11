@@ -837,7 +837,17 @@ const InvoicesView = {
     document
       .getElementById('download-pdf-btn')
       .addEventListener('click', async () => {
-        await PDFGenerator.generateInvoicePDF(invoice);
+        // Create service map for PDF generator
+        const serviceMap = new Map(services.map((s) => [s.id, s]));
+
+        // Call PDF generator with all required data
+        await PDFGenerator.generateInvoicePDF(
+          invoice,
+          client,
+          timeEntries,
+          serviceMap,
+          settings
+        );
       });
 
     document.getElementById('print-btn').addEventListener('click', () => {

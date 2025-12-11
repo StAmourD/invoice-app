@@ -414,19 +414,19 @@ A single-user, browser-based Invoice App built with Vanilla JS + HTML + CSS. Dat
 
 ### Phase 5 — PDF Generation & Printing
 
-- [ ] **5.1 Add jsPDF library** — _Complexity: Low_
+- [x] **5.1 Add jsPDF library** — _Complexity: Low_ — completed by agent: 2025-12-10T22:45:00-06:00 — notes: included jsPDF 2.5.1 via CDN in index.html
 
   - Include jsPDF via CDN or local file
   - **Acceptance:** jsPDF is available globally
 
-- [ ] **5.2 Create `js/utils/pdfGenerator.js`** — _Complexity: High_
+- [x] **5.2 Create `js/utils/pdfGenerator.js`** — _Complexity: High_ — completed by agent: 2025-12-10T22:45:00-06:00 — notes: implemented full PDF generation with jsPDF including company header, client info, line items table with alternating rows, totals, payment terms, page numbers, and multi-page support
 
   - Generate PDF from invoice data
   - Match template layout (header, client info, line items, footer)
   - Handle page breaks for long invoices
   - **Acceptance:** PDF generates with correct layout
 
-- [ ] **5.3 Implement PDF download** — _Complexity: Low_
+- [x] **5.3 Implement PDF download** — _Complexity: Low_ — completed by agent: 2025-12-10T22:45:00-06:00 — notes: connected download button in invoicesView to call PDFGenerator with all required data (invoice, client, timeEntries, serviceMap, settings)
 
   - Download button triggers PDF generation
   - Filename: `{company-name}-{invoice-number}-{date}.pdf`
@@ -531,8 +531,8 @@ A single-user, browser-based Invoice App built with Vanilla JS + HTML + CSS. Dat
 | Phase 2   | Complete        | 6/6            |
 | Phase 3   | Complete        | 5/5            |
 | Phase 4   | Complete        | 4/4            |
-| Phase 5   | In Progress     | 1/4            |
+| Phase 5   | Complete        | 4/4            |
 | Phase 6   | Not Started     | 0/4            |
 | Phase 7   | In Progress     | 2/6            |
 | Phase 8   | Not Started     | 0/3            |
-| **Total** | **In Progress** | **30/44**      |
+| **Total** | **In Progress** | **34/44**      |
