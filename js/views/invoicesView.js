@@ -692,6 +692,7 @@ const InvoicesView = {
       'companyName',
       'companyAddress',
       'companyEmail',
+      'companyLogo',
     ]);
 
     headerActions.innerHTML = `

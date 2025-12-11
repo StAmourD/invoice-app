@@ -41,6 +41,7 @@ const PDFGenerator = {
       const companyName = settings.companyName || 'My Consulting LLC';
       const companyAddress = settings.companyAddress || '';
       const companyEmail = settings.companyEmail || '';
+      const companyLogo = settings.companyLogo;
 
       // Page dimensions and margins
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -56,87 +57,150 @@ const PDFGenerator = {
         return y + lines.length * (options.lineHeight || 7);
       };
 
-      // Header - Company Name
-      doc.setFontSize(24);
+      // Store logo Y position for alignment with INVOICE title
+      let logoYPosition = margin * 0.5;
+
+      // Add logo if available (upper left, aligned with INVOICE)
+      if (companyLogo) {
+        try {
+          // Detect image format from data URL
+          let imageFormat = 'PNG'; // default to PNG as it handles most cases
+          if (companyLogo.startsWith('data:image/')) {
+            const mimeType = companyLogo
+              .split(';')[0]
+              .split('/')[1]
+              .toUpperCase();
+            if (mimeType === 'JPEG' || mimeType === 'JPG') {
+              imageFormat = 'JPEG';
+            } else if (mimeType === 'PNG') {
+              imageFormat = 'PNG';
+            } else if (mimeType === 'GIF') {
+              imageFormat = 'GIF';
+            }
+          }
+
+          // Logo dimensions (max 40mm wide, 20mm high)
+          const logoMaxWidth = 40;
+          const logoMaxHeight = 20;
+          const logoX = margin; // Upper left position
+
+          // Add image to PDF - jsPDF can handle data URLs directly
+          doc.addImage({
+            imageData: companyLogo,
+            format: imageFormat,
+            x: logoX,
+            y: logoYPosition,
+            width: logoMaxWidth,
+            height: logoMaxHeight,
+          });
+        } catch (error) {
+          console.warn('Failed to add logo to PDF:', error);
+          console.warn('Error details:', error.message);
+        }
+      } else {
+        console.warn('No logo data found');
+      }
+
+      // Set yPosition below logo with more space
+      yPosition = logoYPosition + 30;
+
+      // Header - Company Name (smaller font)
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
       doc.text(companyName, margin, yPosition);
-      yPosition += 10;
+      yPosition += 7;
 
       // Company contact info
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       if (companyAddress) {
         yPosition = addText(
           companyAddress,
           margin,
           yPosition,
-          contentWidth / 2
+          contentWidth / 2,
+          { lineHeight: 4.5 }
         );
       }
       if (companyEmail) {
         doc.text(companyEmail, margin, yPosition);
-        yPosition += 5;
+        yPosition += 3;
       }
 
-      // Invoice title and number (right aligned)
-      yPosition = margin;
-      doc.setFontSize(28);
-      doc.setFont('helvetica', 'bold');
-      doc.text('INVOICE', pageWidth - margin, yPosition, { align: 'right' });
-      yPosition += 10;
+      yPosition += 5;
 
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
+      // Invoice title and number (right aligned)
+      doc.setFontSize(32);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(37, 99, 235); // Professional blue
+      doc.text('INVOICE', pageWidth - margin, margin, { align: 'right' });
+      doc.setTextColor(0, 0, 0); // Reset to black
+
+      let rightColY = margin + 10;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
       const invoiceNumberWithVersion = invoice.version
         ? `${invoice.invoiceNumber}-${invoice.version}`
         : invoice.invoiceNumber;
-      doc.text(invoiceNumberWithVersion, pageWidth - margin, yPosition, {
+      doc.text(invoiceNumberWithVersion, pageWidth - margin, rightColY, {
         align: 'right',
       });
-      yPosition += 15;
+      rightColY += 10;
 
       // Invoice metadata (right aligned)
-      doc.setFontSize(10);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
       doc.text(
         `Issue Date: ${formatDate(invoice.issueDate)}`,
         pageWidth - margin,
-        yPosition,
+        rightColY,
         { align: 'right' }
       );
-      yPosition += 5;
+      rightColY += 4;
       doc.text(
         `Due Date: ${formatDate(invoice.dueDate)}`,
         pageWidth - margin,
-        yPosition,
+        rightColY,
         { align: 'right' }
       );
-      yPosition += 15;
+
+      // Set yPosition to after the company info
+      yPosition = Math.max(yPosition, rightColY + 10);
+      yPosition += 5;
+
+      // Horizontal divider line
+      doc.setDrawColor(200, 200, 200);
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 5;
 
       // Bill To section
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.text('BILL TO:', margin, yPosition);
-      yPosition += 7;
-
       doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(37, 99, 235); // Professional blue
+      doc.text('BILL TO', margin, yPosition);
+      doc.setTextColor(0, 0, 0); // Reset to black
+      yPosition += 6;
+
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.text(client.name, margin, yPosition);
-      yPosition += 5;
+      yPosition += 4;
 
       if (client.address) {
         yPosition = addText(
           client.address,
           margin,
           yPosition,
-          contentWidth / 2
+          contentWidth / 2,
+          { lineHeight: 4 }
         );
       }
       if (client.email) {
         doc.text(client.email, margin, yPosition);
-        yPosition += 5;
+        yPosition += 3;
       }
 
-      yPosition += 10;
+      yPosition += 6;
 
       // Line items table
       const tableStartY = yPosition;
@@ -150,34 +214,36 @@ const PDFGenerator = {
       };
 
       // Table header
-      doc.setFillColor(37, 99, 235); // Primary blue color
-      doc.rect(margin, yPosition, contentWidth, 10, 'F');
+      doc.setFillColor(37, 99, 235); // Professional blue
+      doc.setDrawColor(37, 99, 235);
+      doc.rect(margin, yPosition, contentWidth, 9, 'F');
 
       doc.setTextColor(255, 255, 255); // White text
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
 
       let xPos = margin + 2;
-      doc.text('Date', xPos, yPosition + 6.5);
+      doc.text('Date', xPos, yPosition + 6);
       xPos += colWidths.date;
-      doc.text('Description', xPos, yPosition + 6.5);
+      doc.text('Description', xPos, yPosition + 6);
       xPos += colWidths.description;
-      doc.text('Service', xPos, yPosition + 6.5);
+      doc.text('Service', xPos, yPosition + 6);
       xPos += colWidths.service;
-      doc.text('Hours', xPos, yPosition + 6.5);
+      doc.text('Hours', xPos, yPosition + 6);
       xPos += colWidths.hours;
-      doc.text('Rate', xPos, yPosition + 6.5);
+      doc.text('Rate', xPos, yPosition + 6);
       xPos += colWidths.rate;
-      doc.text('Amount', xPos + colWidths.amount - 2, yPosition + 6.5, {
+      doc.text('Amount', xPos + colWidths.amount - 6, yPosition + 6, {
         align: 'right',
       });
 
-      yPosition += 10;
+      yPosition += 9;
       doc.setTextColor(0, 0, 0); // Reset to black
 
       // Table rows
+      doc.setTextColor(0, 0, 0); // Reset to black
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
+      doc.setFontSize(8.5);
 
       let rowCount = 0;
       for (const entry of timeEntries) {

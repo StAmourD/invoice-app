@@ -41,6 +41,7 @@ const SettingsView = {
         'companyName',
         'companyAddress',
         'companyEmail',
+        'companyLogo',
         'maxBackups',
       ]);
 
@@ -103,6 +104,29 @@ const SettingsView = {
                   placeholder="contact@company.com"
                   value="${escapeHtml(this.companySettings.companyEmail || '')}"
                 />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="company-logo">Company Logo</label>
+                <input
+                  type="file"
+                  id="company-logo"
+                  class="form-control"
+                  accept="image/jpeg,image/png,image/gif"
+                />
+                <div class="form-hint">
+                  Upload a logo image (JPEG, PNG, or GIF) to display on invoices. Max 2MB.
+                </div>
+                ${
+                  this.companySettings.companyLogo
+                    ? `
+                  <div style="margin-top: 0.5rem;">
+                    <img id="logo-preview" src="${this.companySettings.companyLogo}" alt="Current logo" style="max-width: 200px; max-height: 100px; border: 1px solid #ddd; padding: 0.25rem;">
+                    <button type="button" class="btn btn-sm btn-danger" id="remove-logo-btn" style="margin-left: 0.5rem;">Remove Logo</button>
+                  </div>
+                `
+                    : ''
+                }
               </div>
 
               <button type="submit" class="btn btn-primary">Save Company Info</button>
@@ -233,6 +257,22 @@ const SettingsView = {
         await this.saveCompanyInfo();
       });
 
+    // Logo upload
+    const logoInput = container.querySelector('#company-logo');
+    if (logoInput) {
+      logoInput.addEventListener('change', async (e) => {
+        await this.handleLogoUpload(e.target.files[0]);
+      });
+    }
+
+    // Remove logo button
+    const removeLogoBtn = container.querySelector('#remove-logo-btn');
+    if (removeLogoBtn) {
+      removeLogoBtn.addEventListener('click', async () => {
+        await this.removeLogo();
+      });
+    }
+
     // Auto-backup buttons
     const selectFolderBtn = container.querySelector('#select-folder-btn');
     if (selectFolderBtn) {
@@ -317,6 +357,64 @@ const SettingsView = {
     } catch (error) {
       console.error('Failed to save company info:', error);
       Toast.error('Save Failed', error.message);
+    }
+  },
+
+  /**
+   * Handle logo file upload
+   */
+  async handleLogoUpload(file) {
+    if (!file) return;
+
+    // Validate file type (only JPEG, PNG, GIF supported by jsPDF)
+    const supportedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!supportedTypes.includes(file.type)) {
+      Toast.error(
+        'Invalid File',
+        'Please select a JPEG, PNG, or GIF image file'
+      );
+      return;
+    }
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      Toast.error('File Too Large', 'Please select an image smaller than 2MB');
+      return;
+    }
+
+    try {
+      // Convert file to base64 data URL
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const dataUrl = e.target.result;
+        await SettingsStore.set('companyLogo', dataUrl);
+        this.companySettings.companyLogo = dataUrl;
+        Toast.success('Logo Uploaded', 'Company logo updated successfully');
+        // Refresh the view to show the new logo
+        this.renderSettings(document.querySelector('#main-view'));
+        this.setupEventListeners(document.querySelector('#main-view'));
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Failed to upload logo:', error);
+      Toast.error('Upload Failed', error.message);
+    }
+  },
+
+  /**
+   * Remove company logo
+   */
+  async removeLogo() {
+    try {
+      await SettingsStore.set('companyLogo', null);
+      this.companySettings.companyLogo = null;
+      Toast.success('Logo Removed', 'Company logo removed successfully');
+      // Refresh the view to hide the logo
+      this.renderSettings(document.querySelector('#main-view'));
+      this.setupEventListeners(document.querySelector('#main-view'));
+    } catch (error) {
+      console.error('Failed to remove logo:', error);
+      Toast.error('Remove Failed', error.message);
     }
   },
 
