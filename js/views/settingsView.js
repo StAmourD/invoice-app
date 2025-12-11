@@ -16,8 +16,14 @@ const SettingsView = {
     // Clear header actions
     headerActions.innerHTML = '';
 
+    // Show loading state
+    Spinner.show(container, 'Loading settings...');
+
     // Load data
     await this.loadData();
+
+    // Hide loading state
+    Spinner.hide(container);
 
     // Render settings
     this.renderSettings(container);

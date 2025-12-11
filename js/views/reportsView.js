@@ -51,8 +51,14 @@ const ReportsView = {
       </div>
     `;
 
+    // Show loading state
+    Spinner.show(container, 'Loading report data...');
+
     // Load data
     await this.loadData();
+
+    // Hide loading state
+    Spinner.hide(container);
 
     // Render current report
     this.renderReport(container);

@@ -27,27 +27,10 @@ const Table = {
   }) {
     if (!data || data.length === 0) {
       return `
-                <div class="table-container">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                ${columns
-                                  .map(
-                                    (col) => `<th>${escapeHtml(col.label)}</th>`
-                                  )
-                                  .join('')}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="${
-                                  columns.length
-                                }" class="table-empty">
-                                    ${escapeHtml(emptyMessage)}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <h3>No Data Yet</h3>
+                    <p>${escapeHtml(emptyMessage)}</p>
                 </div>
             `;
     }

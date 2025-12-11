@@ -21,8 +21,14 @@ const ServicesView = {
             </button>
         `;
 
+    // Show loading state
+    Spinner.show(container, 'Loading services...');
+
     // Load services
     await this.loadServices();
+
+    // Hide loading state
+    Spinner.hide(container);
 
     // Render table
     this.renderTable(container);

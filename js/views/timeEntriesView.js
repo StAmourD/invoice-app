@@ -29,8 +29,14 @@ const TimeEntriesView = {
             </button>
         `;
 
+    // Show loading state
+    Spinner.show(container, 'Loading time entries...');
+
     // Load data
     await this.loadData();
+
+    // Hide loading state
+    Spinner.hide(container);
 
     // Render filters and table
     this.renderView(container);

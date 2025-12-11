@@ -21,8 +21,14 @@ const ClientsView = {
             </button>
         `;
 
+    // Show loading state
+    Spinner.show(container, 'Loading clients...');
+
     // Load clients
     await this.loadClients();
+
+    // Hide loading state
+    Spinner.hide(container);
 
     // Render table
     this.renderTable(container);

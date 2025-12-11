@@ -50,6 +50,14 @@ const Modal = {
     this.overlay.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
+    // Add keyboard event listener for ESC key
+    this._keydownHandler = (e) => {
+      if (e.key === 'Escape') {
+        this.close();
+      }
+    };
+    document.addEventListener('keydown', this._keydownHandler);
+
     // Focus first input
     setTimeout(() => {
       const firstInput = this.contentEl.querySelector(
@@ -69,6 +77,12 @@ const Modal = {
 
     this.overlay.classList.add('hidden');
     document.body.style.overflow = '';
+
+    // Remove keyboard event listener
+    if (this._keydownHandler) {
+      document.removeEventListener('keydown', this._keydownHandler);
+      this._keydownHandler = null;
+    }
 
     // Call close callback
     if (this._onClose) {

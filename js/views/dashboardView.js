@@ -17,8 +17,14 @@ const DashboardView = {
     // Clear header actions
     headerActions.innerHTML = '';
 
+    // Show loading state
+    Spinner.show(container, 'Loading dashboard...');
+
     // Load data
     await this.loadData();
+
+    // Hide loading state
+    Spinner.hide(container);
 
     // Render dashboard
     this.renderDashboard(container);
