@@ -43,7 +43,9 @@ const DashboardView = {
 
       // Get recent invoices (last 10, sorted by issue date descending)
       this.recentInvoices = [...this.invoices]
-        .sort((a, b) => new Date(b.issueDate) - new Date(a.issueDate))
+        .sort(
+          (a, b) => parseLocalDate(b.issueDate) - parseLocalDate(a.issueDate)
+        )
         .slice(0, 10);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);

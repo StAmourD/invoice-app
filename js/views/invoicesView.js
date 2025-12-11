@@ -13,7 +13,6 @@ const InvoicesView = {
   filters: {
     clientId: '',
     startDate: '',
-    endDate: '',
     paidStatus: 'all', // 'all', 'paid', 'unpaid'
   },
 
@@ -97,13 +96,6 @@ const InvoicesView = {
                 </div>
 
                 <div class="filter-group">
-                    <label>End Date</label>
-                    <input type="date" id="filter-end-date" class="form-input" value="${
-                      this.filters.endDate
-                    }">
-                </div>
-
-                <div class="filter-group">
                     <label>Status</label>
                     <select id="filter-paid-status" class="form-select">
                         <option value="all" ${
@@ -142,14 +134,8 @@ const InvoicesView = {
     }
 
     if (this.filters.startDate) {
-      const start = new Date(this.filters.startDate);
-      filtered = filtered.filter((i) => new Date(i.issueDate) >= start);
-    }
-
-    if (this.filters.endDate) {
-      const end = new Date(this.filters.endDate);
-      end.setHours(23, 59, 59, 999);
-      filtered = filtered.filter((i) => new Date(i.issueDate) <= end);
+      const start = parseLocalDate(this.filters.startDate);
+      filtered = filtered.filter((i) => parseLocalDate(i.issueDate) >= start);
     }
 
     if (this.filters.paidStatus === 'paid') {
@@ -299,13 +285,6 @@ const InvoicesView = {
       });
 
     document
-      .getElementById('filter-end-date')
-      .addEventListener('change', (e) => {
-        this.filters.endDate = e.target.value;
-        this.renderView(container);
-      });
-
-    document
       .getElementById('filter-paid-status')
       .addEventListener('change', (e) => {
         this.filters.paidStatus = e.target.value;
@@ -318,7 +297,6 @@ const InvoicesView = {
         this.filters = {
           clientId: '',
           startDate: '',
-          endDate: '',
           paidStatus: 'all',
         };
         this.renderView(container);
@@ -637,7 +615,7 @@ const InvoicesView = {
       return;
     }
 
-    if (new Date(dueDate) < new Date(issueDate)) {
+    if (parseLocalDate(dueDate) < parseLocalDate(issueDate)) {
       Toast.error(
         'Validation Error',
         'Due date must be on or after issue date'
@@ -897,7 +875,7 @@ const InvoicesView = {
       e.preventDefault();
       const newDueDate = document.getElementById('new-due-date').value;
 
-      if (new Date(newDueDate) < new Date(invoice.issueDate)) {
+      if (parseLocalDate(newDueDate) < parseLocalDate(invoice.issueDate)) {
         Toast.error(
           'Validation Error',
           'Due date must be on or after issue date'

@@ -15,7 +15,6 @@ const ReportsView = {
   // Time Entry Report Filters
   timeFilters: {
     startDate: '',
-    endDate: '',
     clientId: '',
     billableStatus: 'all', // 'all', 'billable', 'non-billable'
     invoiceStatus: 'all', // 'all', 'invoiced', 'unbilled'
@@ -24,7 +23,6 @@ const ReportsView = {
   // Invoice Report Filters
   invoiceFilters: {
     startDate: '',
-    endDate: '',
     clientId: '',
     paidStatus: 'all', // 'all', 'paid', 'unpaid'
   },
@@ -117,13 +115,7 @@ const ReportsView = {
                   this.timeFilters.startDate
                 }">
               </div>
-              <div class="form-group">
-                <label class="form-label">End Date</label>
-                <input type="date" id="time-end-date" class="form-control" value="${
-                  this.timeFilters.endDate
-                }">
-              </div>
-              <div class="form-group">
+              <div class="filter-group">
                 <label class="form-label">Client</label>
                 <select id="time-client" class="form-control">
                   <option value="">All Clients</option>
@@ -253,10 +245,11 @@ const ReportsView = {
     return this.timeEntries.filter((entry) => {
       // Date range filter
       if (this.timeFilters.startDate) {
-        if (entry.startDate < this.timeFilters.startDate) return false;
-      }
-      if (this.timeFilters.endDate) {
-        if (entry.startDate > this.timeFilters.endDate) return false;
+        if (
+          parseLocalDate(entry.startDate) <
+          parseLocalDate(this.timeFilters.startDate)
+        )
+          return false;
       }
 
       // Client filter
@@ -306,14 +299,8 @@ const ReportsView = {
                   this.invoiceFilters.startDate
                 }">
               </div>
-              <div class="form-group">
-                <label class="form-label">End Date</label>
-                <input type="date" id="invoice-end-date" class="form-control" value="${
-                  this.invoiceFilters.endDate
-                }">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Client</label>
+              <div class="filter-group">
+                <label class="form-label">Paid Status</label>
                 <select id="invoice-client" class="form-control">
                   <option value="">All Clients</option>
                   ${clientOptions}
@@ -449,13 +436,8 @@ const ReportsView = {
       // Date range filter (by issue date)
       if (
         this.invoiceFilters.startDate &&
-        invoice.issueDate < this.invoiceFilters.startDate
-      ) {
-        return false;
-      }
-      if (
-        this.invoiceFilters.endDate &&
-        invoice.issueDate > this.invoiceFilters.endDate
+        parseLocalDate(invoice.issueDate) <
+          parseLocalDate(this.invoiceFilters.startDate)
       ) {
         return false;
       }
@@ -519,8 +501,6 @@ const ReportsView = {
     applyBtn.addEventListener('click', () => {
       this.timeFilters.startDate =
         container.querySelector('#time-start-date').value;
-      this.timeFilters.endDate =
-        container.querySelector('#time-end-date').value;
       this.timeFilters.clientId = container.querySelector('#time-client').value;
       this.timeFilters.billableStatus =
         container.querySelector('#time-billable').value;
@@ -535,7 +515,6 @@ const ReportsView = {
     resetBtn.addEventListener('click', () => {
       this.timeFilters = {
         startDate: '',
-        endDate: '',
         clientId: '',
         billableStatus: 'all',
         invoiceStatus: 'all',
@@ -560,8 +539,6 @@ const ReportsView = {
       this.invoiceFilters.startDate = container.querySelector(
         '#invoice-start-date'
       ).value;
-      this.invoiceFilters.endDate =
-        container.querySelector('#invoice-end-date').value;
       this.invoiceFilters.clientId =
         container.querySelector('#invoice-client').value;
       this.invoiceFilters.paidStatus = container.querySelector(
@@ -575,7 +552,6 @@ const ReportsView = {
     resetBtn.addEventListener('click', () => {
       this.invoiceFilters = {
         startDate: '',
-        endDate: '',
         clientId: '',
         paidStatus: 'all',
       };

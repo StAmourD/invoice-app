@@ -14,7 +14,6 @@ const TimeEntriesView = {
   filters: {
     clientId: '',
     startDate: '',
-    endDate: '',
     billableOnly: false,
   },
 
@@ -97,13 +96,6 @@ const TimeEntriesView = {
                 </div>
 
                 <div class="filter-group">
-                    <label>End Date</label>
-                    <input type="date" id="filter-end-date" class="form-input" value="${
-                      this.filters.endDate
-                    }">
-                </div>
-
-                <div class="filter-group">
                     <label class="form-checkbox" style="margin-top: 20px;">
                         <input type="checkbox" id="filter-billable" ${
                           this.filters.billableOnly ? 'checked' : ''
@@ -136,14 +128,8 @@ const TimeEntriesView = {
     }
 
     if (this.filters.startDate) {
-      const start = new Date(this.filters.startDate);
-      filtered = filtered.filter((e) => new Date(e.startDate) >= start);
-    }
-
-    if (this.filters.endDate) {
-      const end = new Date(this.filters.endDate);
-      end.setHours(23, 59, 59, 999);
-      filtered = filtered.filter((e) => new Date(e.startDate) <= end);
+      const start = parseLocalDate(this.filters.startDate);
+      filtered = filtered.filter((e) => parseLocalDate(e.startDate) >= start);
     }
 
     if (this.filters.billableOnly) {
@@ -295,13 +281,6 @@ const TimeEntriesView = {
       });
 
     document
-      .getElementById('filter-end-date')
-      .addEventListener('change', (e) => {
-        this.filters.endDate = e.target.value;
-        this.renderView(container);
-      });
-
-    document
       .getElementById('filter-billable')
       .addEventListener('change', (e) => {
         this.filters.billableOnly = e.target.checked;
@@ -314,7 +293,6 @@ const TimeEntriesView = {
         this.filters = {
           clientId: '',
           startDate: '',
-          endDate: '',
           billableOnly: false,
         };
         this.renderView(container);

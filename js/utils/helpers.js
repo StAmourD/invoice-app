@@ -15,6 +15,18 @@ function generateUUID() {
 }
 
 /**
+ * Parse a date string in local timezone (YYYY-MM-DD format)
+ * @param {string} dateStr - Date string in YYYY-MM-DD format
+ * @returns {Date} Date object in local timezone
+ */
+function parseLocalDate(dateStr) {
+  if (!dateStr) return new Date();
+  // Split the date string and create a date in local timezone
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
  * Format a date to locale string (en-US)
  * @param {string|Date} date - Date to format
  * @param {object} options - Intl.DateTimeFormat options
@@ -22,7 +34,17 @@ function generateUUID() {
  */
 function formatDate(date, options = {}) {
   if (!date) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
+  let d;
+  if (typeof date === 'string') {
+    // If it's a date-only string (YYYY-MM-DD), parse it as local date
+    if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      d = parseLocalDate(date);
+    } else {
+      d = new Date(date);
+    }
+  } else {
+    d = date;
+  }
   const defaultOptions = {
     year: 'numeric',
     month: 'short',
@@ -38,8 +60,21 @@ function formatDate(date, options = {}) {
  */
 function formatDateForInput(date) {
   if (!date) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toISOString().split('T')[0];
+  let d;
+  if (typeof date === 'string') {
+    // If it's already a date string, just return it
+    if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return date;
+    }
+    d = new Date(date);
+  } else {
+    d = date;
+  }
+  // Use local date components to avoid timezone issues
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -120,7 +155,16 @@ function addDays(date, days) {
  */
 function isOverdue(dueDate) {
   if (!dueDate) return false;
-  const due = typeof dueDate === 'string' ? new Date(dueDate) : dueDate;
+  let due;
+  if (typeof dueDate === 'string') {
+    if (dueDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      due = parseLocalDate(dueDate);
+    } else {
+      due = new Date(dueDate);
+    }
+  } else {
+    due = dueDate;
+  }
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return due < today;
@@ -279,6 +323,7 @@ function exportToCSV(data, columns, filename) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     generateUUID,
+    parseLocalDate,
     formatDate,
     formatDateForInput,
     formatDateTimeForInput,

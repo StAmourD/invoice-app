@@ -8,7 +8,7 @@ A single-user, browser-based invoice management application built with vanilla J
 
 - **Client Management** - Add, edit, and delete clients with contact information and payment terms
 - **Service Catalog** - Manage your services with customizable rates and billable status
-- **Time Tracking** - Track time entries with start/end times, descriptions, and client/service associations
+- **Time Tracking** - Track time entries with start dates, hours, descriptions, and client/service associations
 - **Invoice Generation** - Create invoices from unbilled time entries with automatic calculations
 - **PDF Export** - Generate professional PDF invoices with customizable company branding
 - **Dashboard** - View key metrics including total revenue, outstanding balances, and overdue invoices
