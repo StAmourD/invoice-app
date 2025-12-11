@@ -388,25 +388,25 @@ A single-user, browser-based Invoice App built with Vanilla JS + HTML + CSS. Dat
 
 ### Phase 4 — Reports & Dashboard
 
-- [ ] **4.1 Create `js/views/dashboardView.js`** — _Complexity: Medium_
+- [x] **4.1 Create `js/views/dashboardView.js`** — _Complexity: Medium_ — completed by agent: 2025-12-10T22:30:00-06:00 — notes: implemented dashboard with summary cards (revenue, outstanding, overdue), recent invoices list with quick paid/unpaid toggle
 
   - Summary cards: total revenue, outstanding amount, overdue amount
   - Recent invoices list with quick paid/unpaid toggle
   - **Acceptance:** Dashboard shows accurate summaries
 
-- [ ] **4.2 Create `js/views/reportsView.js`** — _Complexity: Medium_
+- [x] **4.2 Create `js/views/reportsView.js`** — _Complexity: Medium_ — completed by agent: 2025-12-10T22:30:00-06:00 — notes: implemented time entry report with filters (date range, client, billable, invoice status) and CSV export
 
   - Time Entry Report: filter by date range, client, billable
   - Show total hours and total amount
   - **Acceptance:** Time report generates correctly
 
-- [ ] **4.3 Add Invoice Report** — _Complexity: Medium_
+- [x] **4.3 Add Invoice Report** — _Complexity: Medium_ — completed by agent: 2025-12-10T22:30:00-06:00 — notes: implemented invoice report with filters (date range, client, paid status), totals (total, paid, unpaid), and CSV export with tab switching between reports
 
   - Filter by date range, client, paid status
   - Show totals for filtered results
   - **Acceptance:** Invoice report generates correctly
 
-- [ ] **4.4 Add export to CSV** — _Complexity: Low_
+- [x] **4.4 Add export to CSV** — _Complexity: Low_ — completed by agent: 2025-12-10T22:30:00-06:00 — notes: created exportToCSV() in helpers.js with proper CSV escaping and dynamic filenames
   - Export current report view to CSV file
   - **Acceptance:** CSV downloads with correct data
 
@@ -530,9 +530,9 @@ A single-user, browser-based Invoice App built with Vanilla JS + HTML + CSS. Dat
 | Phase 1   | Complete        | 7/7            |
 | Phase 2   | Complete        | 6/6            |
 | Phase 3   | Complete        | 5/5            |
-| Phase 4   | Not Started     | 0/4            |
+| Phase 4   | Complete        | 4/4            |
 | Phase 5   | In Progress     | 1/4            |
 | Phase 6   | Not Started     | 0/4            |
 | Phase 7   | In Progress     | 2/6            |
 | Phase 8   | Not Started     | 0/3            |
-| **Total** | **In Progress** | **26/44**      |
+| **Total** | **In Progress** | **30/44**      |

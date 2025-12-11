@@ -210,6 +210,71 @@ function parseQueryString(queryString) {
   return params;
 }
 
+/**
+ * Export data to CSV and trigger download
+ * @param {Array} data - Array of objects to export
+ * @param {Array} columns - Column definitions [{ key, label }]
+ * @param {string} filename - Filename without extension
+ */
+function exportToCSV(data, columns, filename) {
+  if (!data || data.length === 0) {
+    Toast.warning('No Data', 'Nothing to export');
+    return;
+  }
+
+  // Create CSV header
+  const headers = columns.map((col) => col.label).join(',');
+
+  // Create CSV rows
+  const rows = data.map((row) => {
+    return columns
+      .map((col) => {
+        let value = row[col.key];
+
+        // Handle undefined/null
+        if (value === undefined || value === null) {
+          value = '';
+        }
+
+        // Convert to string
+        value = String(value);
+
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        if (
+          value.includes(',') ||
+          value.includes('"') ||
+          value.includes('\n')
+        ) {
+          value = '"' + value.replace(/"/g, '""') + '"';
+        }
+
+        return value;
+      })
+      .join(',');
+  });
+
+  // Combine header and rows
+  const csv = [headers, ...rows].join('\n');
+
+  // Create blob and download
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  // Add timestamp to filename
+  const timestamp = formatDateForInput(new Date());
+  const sanitizedFilename = sanitizeFilename(`${filename}-${timestamp}`);
+
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${sanitizedFilename}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  Toast.success('Export Complete', `${sanitizedFilename}.csv downloaded`);
+}
+
 // Export for use in other modules (if using ES modules in future)
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -230,5 +295,6 @@ if (typeof module !== 'undefined' && module.exports) {
     deepClone,
     escapeHtml,
     parseQueryString,
+    exportToCSV,
   };
 }
