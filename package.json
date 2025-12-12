@@ -1,0 +1,30 @@
+{
+  "name": "invoice-app",
+  "version": "1.0.0",
+  "description": "Vanilla JS Invoice App - build script for cache busting and publishing to /public",
+  "main": "index.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "watch": "node scripts/build.js --watch",
+    "clean": "node -e \"require('fs').rmSync('public',{recursive:true,force:true});\"",
+    "start": "npx http-server public -p 8080",
+    "dev": "concurrently -k -n watch,server -c cyan,green \"npm run watch\" \"npx live-server public --no-browser --port=8080\""
+  },
+  "keywords": [
+    "invoice",
+    "vanilla-js",
+    "spa",
+    "build"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14"
+  },
+  "devDependencies": {
+    "chokidar": "^3.5.3",
+    "concurrently": "^8.2.2",
+    "esbuild": "^0.19.6",
+    "live-server": "^1.2.2"
+  }
+}

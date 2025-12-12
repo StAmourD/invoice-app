@@ -5,17 +5,24 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch Chrome",
+      "name": "Launch Dev (Chrome)",
+      "type": "pwa-chrome",
       "request": "launch",
-      "type": "chrome",
+      "preLaunchTask": "npm: dev",
       "url": "http://localhost:8080",
-      "webRoot": "${workspaceFolder}"
+      "webRoot": "${workspaceFolder}/public",
+      "breakOnLoad": false,
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "*": "${workspaceFolder}/*"
+      }
     },
     {
-      "type": "chrome",
+      "name": "Open index.html (local)",
+      "type": "pwa-chrome",
       "request": "launch",
-      "name": "Open index.html",
-      "file": "d:\\Projects\\Invoice-App\\index.html"
+      "file": "${workspaceFolder}/index.html",
+      "webRoot": "${workspaceFolder}"
     }
   ]
 }

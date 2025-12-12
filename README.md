@@ -315,3 +315,47 @@ This is a standalone project. Feel free to fork and modify for your needs.
 **Made with ❤️ using Vanilla JavaScript**
 
 For questions or issues, please refer to the project documentation or source code comments.
+
+## 🏗️ Build / Publish
+
+This repository includes a simple Node-based build script which copies the app into a `public/` folder and applies cache-busting to CSS/JS/image files.
+
+Usage:
+
+```bash
+# Install Node.js (if necessary) and run build
+npm install   # optional - this project doesn't rely on direct npm packages
+npm run build
+
+# Serve the public folder for testing
+npx http-server public -p 8080
+```
+
+What the build does:
+
+- Creates/cleans `public/` (output folder)
+- Copies project files, renames JS/CSS/image files with an 8-character SHA-256 content hash appended (e.g. `app.abcdef01.js`)
+- Rewrites references in `index.html`, CSS and JS files to the hashed names
+- Minifies JS/CSS during the build (requires `esbuild`) for smaller bundles
+- Supports a watch mode that rebuilds when files change (requires `chokidar`)
+
+Dev workflow (quick summary)
+
+- Start the combined watcher + server with a single command: `npm run dev` (or press F5 in VS Code).
+- What runs:
+  - `npm run watch` — runs `node scripts/build.js --watch` which uses `chokidar` to watch `js/`, `css/`, `index.html` and `assets/` and rebuild the `public/` folder when files change.
+  - `live-server public --no-browser --port=8080` — serves `public/` and automatically reloads the browser when files in `public/` are updated.
+- How the flow works: edit source files → build script detects changes and rewrites/rehashes assets → `public/` is updated → `live-server` reloads the page → DevTools uses source maps (if enabled) to map code back to original files for debugging.
+- Debugging: press F5 in VS Code to run the `npm: dev` task then launch Chrome. Sourcemaps are emitted if `esbuild` is installed and enabled.
+
+Notes:
+
+- The script is minimal and intended for simple publishing and for adding cache-busting support; it intentionally excludes `node_modules`, `.git`, and `scripts/` from being copied
+- If you need extra build features (minification, bundling), consider adopting a bundler like Rollup, esbuild, or Webpack and adding it to this script.
+- The build script minifies JS/CSS with `esbuild` and emits external source maps for debugging; ensure `esbuild` is installed as a dev dependency to enable this feature.
+
+Debugging with Source Maps (VS Code)
+
+- F5 in VS Code will run the dev task and open Chrome using the workspace launch configuration (`.vscode/launch.json`).
+- The build emits external source maps for JS and CSS. You can set breakpoints in original source files under `js/` directly in VS Code and they will map to the minified output.
+- If you prefer to attach to a manually started server, set the `webRoot` in your launch configuration to `${workspaceFolder}/public` and enable `sourceMaps` in the debugger config.
