@@ -1,11 +1,24 @@
-image: busybox
+image: node:18-alpine
+
+stages:
+  - build
+  - deploy
+
+cache:
+  paths:
+    - node_modules/
+    - .npm
 
 pages:
   stage: deploy
+  image: node:18-alpine
   script:
+    - npm ci --prefer-offline --no-audit --progress=false
+    - npm run build
     - echo "The site will be deployed to $CI_PAGES_URL"
   artifacts:
     paths:
       - public
+    expire_in: 1 week
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
