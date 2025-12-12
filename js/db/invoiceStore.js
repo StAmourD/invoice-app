@@ -117,6 +117,15 @@ const InvoiceStore = {
   },
 
   /**
+   * Convenience alias for getById
+   * @param {string} id - Invoice id
+   * @returns {Promise<object|null>}
+   */
+  get(id) {
+    return this.getById(id);
+  },
+
+  /**
    * Get all invoices
    * @returns {Promise<array>}
    */

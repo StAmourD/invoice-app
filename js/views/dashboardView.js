@@ -248,13 +248,21 @@ const DashboardView = {
    */
   async togglePaidStatus(invoiceId, newPaidStatus) {
     try {
-      const invoice = await InvoiceStore.get(invoiceId);
+      const invoice = await InvoiceStore.getById(invoiceId);
       if (!invoice) {
         Toast.error('Error', 'Invoice not found');
         return;
       }
 
+      // If no change needed, short-circuit
+      if (invoice.paid === newPaidStatus) {
+        // Nothing to do
+        return;
+      }
+
+      // Update fields consistently using the store helper behaviour
       invoice.paid = newPaidStatus;
+      invoice.paidDate = newPaidStatus ? getTodayISO() : null;
       await InvoiceStore.update(invoice);
 
       Toast.success(
