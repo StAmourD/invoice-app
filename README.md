@@ -58,18 +58,7 @@ A single-user, browser-based invoice management application built with vanilla J
 
 3. **Alternative: Use a local server** (optional, for development)
 
-   ```bash
-   # Using Python
-   python -m http.server 8000
-
-   # Using Node.js
-   npx serve
-
-   # Using PHP
-   php -S localhost:8000
-   ```
-
-   Then navigate to `http://localhost:8000`
+  See build / publish section below.
 
 ## 📖 Usage Guide
 
@@ -324,7 +313,7 @@ Usage:
 
 ```bash
 # Install Node.js (if necessary) and run build
-npm install   # optional - this project doesn't rely on direct npm packages
+npm install   # optional - this project doesn't rely on direct npm packages - required for dev workflow
 npm run build
 
 # Serve the public folder for testing
