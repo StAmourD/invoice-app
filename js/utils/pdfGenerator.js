@@ -249,7 +249,7 @@ const PDFGenerator = {
       for (const entry of timeEntries) {
         const service = serviceMap.get(entry.serviceId);
         const hours = entry.hours;
-        const rate = service?.rate || 0;
+        const rate = entry.rate || 0;
         const amount = hours * rate;
 
         // Check if we need a new page

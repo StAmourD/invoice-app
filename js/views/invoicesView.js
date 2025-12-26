@@ -498,9 +498,9 @@ const InvoicesView = {
     let selectedTotal = 0;
     const entryAmounts = {};
     timeEntries.forEach((entry) => {
-      const service = services.find((s) => s.id === entry.serviceId);
       const hours = entry.hours;
-      const amount = service ? hours * service.rate : 0;
+      const rate = entry.rate || 0;
+      const amount = hours * rate;
       entryAmounts[entry.id] = amount;
       selectedTotal += amount;
     });
@@ -768,9 +768,8 @@ const InvoicesView = {
                                   (s) => s.id === entry.serviceId
                                 );
                                 const hours = entry.hours;
-                                const amount = service
-                                  ? hours * service.rate
-                                  : 0;
+                                const rate = entry.rate || 0;
+                                const amount = hours * rate;
                                 return `
                                     <tr>
                                         <td>${escapeHtml(
@@ -785,7 +784,7 @@ const InvoicesView = {
                                           hours
                                         )}</td>
                                         <td class="number">${formatCurrency(
-                                          service ? service.rate : 0
+                                          rate
                                         )}</td>
                                         <td class="number">${formatCurrency(
                                           amount

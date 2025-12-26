@@ -203,8 +203,7 @@ const TimeEntriesView = {
         sortable: false,
         className: 'number',
         render: (entry) => {
-          const service = this.services.find((s) => s.id === entry.serviceId);
-          const amount = service ? entry.hours * service.rate : 0;
+          const amount = entry.hours * entry.rate;
           return formatCurrency(amount);
         },
       },
@@ -249,10 +248,7 @@ const TimeEntriesView = {
     let totalAmount = 0;
     sortedData.forEach((entry) => {
       totalHours += entry.hours;
-      const service = this.services.find((s) => s.id === entry.serviceId);
-      if (service) {
-        totalAmount += entry.hours * service.rate;
-      }
+      totalAmount += entry.hours * entry.rate;
     });
 
     const tableHtml = Table.render({
@@ -416,6 +412,24 @@ const TimeEntriesView = {
                     </select>
                 </div>
 
+                <div class="form-group">
+                    <label for="entry-rate" class="form-label required">Rate ($/hr)</label>
+                    <input 
+                        type="number" 
+                        id="entry-rate" 
+                        class="form-input" 
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        value="${
+                          entry 
+                            ? entry.rate.toFixed(2)
+                            : (this.services.find(s => s.id === (entry?.serviceId || defaultServiceId))?.rate || 0).toFixed(2)
+                        }"
+                        required
+                    >
+                </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="entry-start-date" class="form-label required">Start Date</label>
@@ -484,6 +498,17 @@ const TimeEntriesView = {
 
     Modal.open({ title, content, size: 'lg' });
 
+    // Update rate field when service changes
+    const serviceSelect = document.getElementById('entry-service');
+    const rateField = document.getElementById('entry-rate');
+    
+    serviceSelect.addEventListener('change', (e) => {
+      const selectedService = this.services.find(s => s.id === e.target.value);
+      if (selectedService) {
+        rateField.value = selectedService.rate.toFixed(2);
+      }
+    });
+
     // Focus on hours field for new entries
     if (!isEdit) {
       setTimeout(() => {
@@ -512,11 +537,13 @@ const TimeEntriesView = {
    */
   async saveEntry(existingEntry) {
     const hoursValue = parseFloat(document.getElementById('entry-hours').value);
+    const rateValue = parseFloat(document.getElementById('entry-rate').value);
     const formData = {
       clientId: document.getElementById('entry-client').value,
       serviceId: document.getElementById('entry-service').value,
       startDate: document.getElementById('entry-start-date').value,
       hours: hoursValue,
+      rate: rateValue,
       description: document.getElementById('entry-description').value.trim(),
       billable: document.getElementById('entry-billable').checked,
     };
@@ -526,7 +553,8 @@ const TimeEntriesView = {
       !formData.clientId ||
       !formData.serviceId ||
       !formData.startDate ||
-      !formData.hours
+      !formData.hours ||
+      !formData.rate
     ) {
       Toast.error('Validation Error', 'Please fill in all required fields');
       return;
@@ -534,6 +562,11 @@ const TimeEntriesView = {
 
     if (formData.hours <= 0) {
       Toast.error('Validation Error', 'Hours must be greater than 0');
+      return;
+    }
+
+    if (formData.rate <= 0) {
+      Toast.error('Validation Error', 'Rate must be greater than 0');
       return;
     }
 

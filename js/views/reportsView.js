@@ -183,7 +183,7 @@ const ReportsView = {
         const client = clientMap.get(entry.clientId);
         const service = serviceMap.get(entry.serviceId);
         const hours = entry.hours;
-        const rate = service?.rate || 0;
+        const rate = entry.rate || 0;
         const amount = hours * rate;
 
         totalHours += hours;
