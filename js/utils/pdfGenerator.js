@@ -132,7 +132,7 @@ const PDFGenerator = {
       // Invoice title and number (right aligned)
       doc.setFontSize(32);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(37, 99, 235); // Professional blue
+      doc.setTextColor(50, 104, 204); // Professional blue
       doc.text('INVOICE', pageWidth - margin, margin, { align: 'right' });
       doc.setTextColor(0, 0, 0); // Reset to black
 
@@ -176,7 +176,7 @@ const PDFGenerator = {
       // Bill To section
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(37, 99, 235); // Professional blue
+      doc.setTextColor(50, 104, 204); // Professional blue
       doc.text('BILL TO', margin, yPosition);
       doc.setTextColor(0, 0, 0); // Reset to black
       yPosition += 6;
@@ -214,8 +214,8 @@ const PDFGenerator = {
       };
 
       // Table header
-      doc.setFillColor(37, 99, 235); // Professional blue
-      doc.setDrawColor(37, 99, 235);
+      doc.setFillColor(50, 104, 204); // Professional blue
+      doc.setDrawColor(50, 104, 204);
       doc.rect(margin, yPosition, contentWidth, 9, 'F');
 
       doc.setTextColor(255, 255, 255); // White text
