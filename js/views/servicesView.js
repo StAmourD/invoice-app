@@ -119,6 +119,7 @@ const ServicesView = {
         this.sortColumn = column;
         this.sortDirection = direction;
         this.renderTable(container);
+        this.setupEventListeners(container);
       },
       this.sortColumn,
       this.sortDirection

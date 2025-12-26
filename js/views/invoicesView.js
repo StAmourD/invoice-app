@@ -314,6 +314,7 @@ const InvoicesView = {
         this.sortColumn = column;
         this.sortDirection = direction;
         this.renderView(container);
+        this.setupEventListeners(container);
       },
       this.sortColumn,
       this.sortDirection
