@@ -3,6 +3,7 @@
 /*
  Build script:
   - Creates/cleans /public
+  - Generates config.js from environment variables
   - Computes content hashes for CSS/JS/image files
   - Copies files over to /public with hashed names (for cache-busting)
   - Rewrites references in HTML, CSS and JS to use hashed filenames
@@ -13,6 +14,14 @@ const path = require('path');
 const crypto = require('crypto');
 let esbuild;
 let chokidar;
+let dotenv;
+
+try {
+  dotenv = require('dotenv');
+} catch (e) {
+  console.warn('dotenv is not installed. Environment variables will not be loaded from .env file.');
+}
+
 try {
   esbuild = require('esbuild');
 } catch (e) {
@@ -50,13 +59,16 @@ function hashFileContent(buffer) {
 
 function isIgnored(filePath) {
   const rel = path.relative(root, filePath).replace(/\\/g, '/');
-  // Exclude node_modules, .git, scripts/build.js itself
+  // Exclude node_modules, .git, scripts/build.js itself, config template, and .env files
   return (
     rel.startsWith('node_modules') ||
     rel.startsWith('.git') ||
     rel.startsWith('.github') ||
     rel.startsWith('public') ||
-    rel.startsWith('scripts')
+    rel.startsWith('scripts') ||
+    rel === 'js/config.template.js' ||
+    rel === '.env' ||
+    rel === '.env.example'
   );
 }
 
@@ -91,6 +103,36 @@ async function minifyContent(content, ext, sourcefile) {
     console.warn('esbuild minify failed for', ext, e.message);
   }
   return { code: content, map: null };
+}
+
+function generateConfigFile() {
+  // Load environment variables from .env file if it exists
+  if (dotenv && fs.existsSync(path.join(root, '.env'))) {
+    dotenv.config({ path: path.join(root, '.env') });
+  }
+
+  // Read config template
+  const templatePath = path.join(root, 'js', 'config.template.js');
+  if (!fs.existsSync(templatePath)) {
+    console.warn('config.template.js not found, skipping config generation');
+    return;
+  }
+
+  let template = fs.readFileSync(templatePath, 'utf8');
+
+  // Replace placeholders with environment variables
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || '';
+  const buildDate = new Date().toISOString();
+  const environment = process.env.NODE_ENV || 'development';
+
+  template = template.replace('__GOOGLE_OAUTH_CLIENT_ID__', clientId);
+  template = template.replace('__BUILD_DATE__', buildDate);
+  template = template.replace('__ENVIRONMENT__', environment);
+
+  // Write to js/config.js (source) so it gets processed by the build
+  const configPath = path.join(root, 'js', 'config.js');
+  fs.writeFileSync(configPath, template, 'utf8');
+  console.log('✓ Generated js/config.js from environment variables');
 }
 
 function readAllFiles(dir) {
@@ -223,6 +265,10 @@ async function copyAndRewriteFiles(files) {
 
 async function buildOnce() {
   console.log('\nBuild started...');
+  
+  // Generate config.js from environment variables
+  generateConfigFile();
+  
   // Clean public
   rimraf(publicDir);
   ensureDir(publicDir);
@@ -274,7 +320,10 @@ async function run() {
     path.join(root, 'assets'),
   ];
   const watcher = chokidar.watch(watchPaths, {
-    ignored: /(^|[\\/])\../,
+    ignored: [
+      /(^|[\\/])\../,
+      path.join(root, 'js', 'config.js') // Ignore auto-generated config.js to prevent rebuild loops
+    ],
     ignoreInitial: true,
   });
   let timeout = null;

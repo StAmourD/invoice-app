@@ -204,4 +204,16 @@ const Database = {
       });
     }
   },
+
+  /**
+   * Check if the database is empty (no clients, services, or invoices)
+   * @returns {Promise<boolean>}
+   */
+  async isEmpty() {
+    const clients = await ClientStore.getAll();
+    const services = await ServiceStore.getAll();
+    const invoices = await InvoiceStore.getAll();
+    
+    return clients.length === 0 && services.length === 0 && invoices.length === 0;
+  },
 };

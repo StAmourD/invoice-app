@@ -1,2 +1,12 @@
+# Build output
 /public/
+
+# Dependencies
 /node_modules/
+
+# Environment variables
+.env
+.env.local
+
+# Generated config (created during build)
+/js/config.js

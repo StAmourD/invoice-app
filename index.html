@@ -111,6 +111,21 @@
   <script src="js/views/invoicesView.js"></script>
   <script src="js/views/reportsView.js"></script>
   <script src="js/views/settingsView.js"></script>
+  <!-- Google Identity Services (OAuth 2.0) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Config file (generated during build, optional for simple HTML) -->
+  <script>
+    // Create empty config if not built (simple HTML usage)
+    if (typeof window.AppConfig === 'undefined') {
+      window.AppConfig = {
+        googleOAuthClientId: null,
+        buildDate: null,
+        environment: 'development'
+      };
+    }
+  </script>
+  <script src="js/config.js" onerror="console.log('Config file not found, using manual configuration')"></script>
+  <script src="js/utils/googleDrive.js"></script>
   <script src="js/utils/backup.js"></script>
   <!-- jsPDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

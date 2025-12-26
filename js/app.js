@@ -16,6 +16,9 @@ const App = {
     console.log('Invoice App initializing...');
 
     try {
+      // Show loading screen
+      this.showLoadingScreen('Initializing application...');
+
       // Initialize database
       await Database.init();
       console.log('Database initialized');
@@ -24,8 +27,29 @@ const App = {
       await Backup.init();
       console.log('Backup system initialized');
 
-      // Seed sample data if empty
-      await this.seedDataIfEmpty();
+      // Check if database is empty
+      const isEmpty = await Database.isEmpty();
+      
+      if (isEmpty) {
+        console.log('Database is empty, checking for backup options...');
+        await this.handleEmptyDatabase();
+      } else {
+        // Database has data, but check if user is signed in to load latest backup
+        if (GoogleDrive.isAuthorized) {
+          console.log('User is signed in, loading latest backup...');
+          this.showLoadingScreen('Loading latest backup from Google Drive...');
+          try {
+            await Backup.loadLatestBackup();
+            Toast.success('Backup Loaded', 'Latest data loaded from Google Drive');
+          } catch (error) {
+            console.error('Failed to load latest backup:', error);
+            // Don't show error toast - user already has data
+          }
+        }
+      }
+
+      // Hide loading screen
+      this.hideLoadingScreen();
 
       // Initialize router
       this.initRouter();
@@ -39,7 +63,239 @@ const App = {
       console.log('App initialized successfully');
     } catch (error) {
       console.error('Failed to initialize app:', error);
+      this.hideLoadingScreen();
       Toast.error('Failed to initialize application', error.message);
+    }
+  },
+
+  /**
+   * Handle empty database - prompt user to load backup or sample data
+   */
+  async handleEmptyDatabase() {
+    const backupStatus = await Backup.getStatus();
+    
+    // If Google Drive is configured and authorized, try to load backup
+    if (backupStatus.isConfigured && backupStatus.isAuthorized) {
+      this.showLoadingScreen('Loading backup from Google Drive...');
+      try {
+        const loaded = await Backup.loadLatestBackup();
+        if (loaded) {
+          Toast.success('Welcome Back', 'Your data has been restored from Google Drive');
+          return;
+        }
+        // No backup found, continue to prompt
+        console.log('No backup found, will prompt for sample data');
+      } catch (error) {
+        console.error('Failed to load backup:', error);
+        Toast.error('Backup Load Failed', error.message);
+      }
+    }
+
+    // If Google Drive is configured but not authorized, prompt user
+    if (backupStatus.isConfigured && !backupStatus.isAuthorized) {
+      this.hideLoadingScreen(); // Hide loading screen before showing modal
+      await this.showSignInPrompt();
+      return;
+    }
+
+    // No Google Drive configured, just load sample data
+    await this.seedDataIfEmpty();
+  },
+
+  /**
+   * Show sign-in prompt modal
+   */
+  async showSignInPrompt() {
+    return new Promise((resolve) => {
+      Modal.open({
+        title: 'Welcome to Invoice App',
+        content: `
+          <div style="padding: 1rem 0;">
+            <p style="margin-bottom: 1.5rem;">Would you like to sign in with Google to restore your data from backup?</p>
+            <div style="display: flex; gap: 1rem; flex-direction: column;">
+              <button class="btn btn-success" id="modal-signin-btn" style="width: 100%;">
+                <svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align: middle; margin-right: 0.5rem;">
+                  <path fill="currentColor" d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27 3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10 5.35 0 9.25-3.67 9.25-9.09 0-1.15-.15-1.81-.15-1.81z"/>
+                </svg>
+                Sign in with Google
+              </button>
+              <button class="btn btn-secondary" id="modal-sample-btn" style="width: 100%;">
+                Continue with Sample Data
+              </button>
+              <button class="btn btn-outline" id="modal-empty-btn" style="width: 100%;">
+                Continue with Empty Data
+              </button>
+            </div>
+          </div>
+        `,
+        size: 'default',
+      });
+
+      // Handle sign-in button
+      document.getElementById('modal-signin-btn').addEventListener('click', async () => {
+        Modal.close();
+        this.showLoadingScreen('Connecting to Google Drive...');
+        try {
+          const connected = await Backup.connectGoogleDrive();
+          if (connected) {
+            // Check if there are existing backups in Google Drive
+            this.showLoadingScreen('Checking for backups...');
+            const hasBackups = await Backup.hasBackups();
+            this.hideLoadingScreen();
+            
+            if (hasBackups) {
+              // Ask user what to do
+              await this.showRestoreOrUploadPrompt();
+            } else {
+              // No backups found, load sample data
+              Toast.info('No Backup Found', 'Loading sample data instead');
+              this.showLoadingScreen('Loading sample data...');
+              await this.seedDataIfEmpty();
+              this.hideLoadingScreen();
+            }
+          } else {
+            // Connection failed, load sample data
+            this.hideLoadingScreen();
+            await this.seedDataIfEmpty();
+          }
+        } catch (error) {
+          console.error('Sign-in error:', error);
+          this.hideLoadingScreen();
+          Toast.error('Sign-in Failed', error.message);
+          await this.seedDataIfEmpty();
+        }
+        resolve();
+      });
+
+      // Handle sample data button
+      document.getElementById('modal-sample-btn').addEventListener('click', async () => {
+        Modal.close();
+        this.showLoadingScreen('Loading sample data...');
+        await this.seedDataIfEmpty();
+        this.hideLoadingScreen();
+        resolve();
+      });
+
+      // Handle empty data button
+      document.getElementById('modal-empty-btn').addEventListener('click', async () => {
+        Modal.close();
+        Toast.info('Ready to Go', 'Start adding your clients, services, and invoices');
+        resolve();
+      });
+    });
+  },
+
+  /**
+   * Show restore or upload prompt modal
+   */
+  async showRestoreOrUploadPrompt() {
+    return new Promise((resolve) => {
+      Modal.open({
+        title: 'Backup Found on Google Drive',
+        content: `
+          <div style="padding: 1rem 0;">
+            <p style="margin-bottom: 1.5rem;">We found existing backups in your Google Drive. What would you like to do?</p>
+            <div style="display: flex; gap: 1rem; flex-direction: column;">
+              <button class="btn btn-success" id="modal-restore-btn" style="width: 100%;">
+                <span style="font-weight: 600;">Restore from Google Drive</span>
+                <small style="display: block; margin-top: 0.25rem; opacity: 0.9;">Load your backed-up data</small>
+              </button>
+              <button class="btn btn-primary" id="modal-upload-btn" style="width: 100%;">
+                <span style="font-weight: 600;">Start Fresh with Sample Data</span>
+                <small style="display: block; margin-top: 0.25rem; opacity: 0.9;">Load sample data (your backup stays safe)</small>
+              </button>
+              <button class="btn btn-outline" id="modal-existing-btn" style="width: 100%;">
+                <span style="font-weight: 600;">Continue with Empty Data</span>
+                <small style="display: block; margin-top: 0.25rem; opacity: 0.9;">Start fresh and overwrite Google Drive backup</small>
+              </button>
+            </div>
+          </div>
+        `,
+        size: 'default',
+      });
+
+      // Handle restore button
+      document.getElementById('modal-restore-btn').addEventListener('click', async () => {
+        Modal.close();
+        this.showLoadingScreen('Loading backup from Google Drive...');
+        try {
+          const loaded = await Backup.loadLatestBackup();
+          this.hideLoadingScreen();
+          if (loaded) {
+            Toast.success('Restore Complete', 'Your data has been restored from Google Drive');
+          } else {
+            Toast.info('No Backup Found', 'Loading sample data instead');
+            await this.seedDataIfEmpty();
+          }
+        } catch (error) {
+          console.error('Restore error:', error);
+          this.hideLoadingScreen();
+          Toast.error('Restore Failed', error.message);
+          await this.seedDataIfEmpty();
+        }
+        resolve();
+      });
+
+      // Handle upload (start fresh) button
+      document.getElementById('modal-upload-btn').addEventListener('click', async () => {
+        Modal.close();
+        this.showLoadingScreen('Loading sample data...');
+        await this.seedDataIfEmpty();
+        this.hideLoadingScreen();
+        Toast.info('Sample Data Loaded', 'Your Google Drive backup remains unchanged');
+        resolve();
+      });
+
+      // Handle existing/empty data button
+      document.getElementById('modal-existing-btn').addEventListener('click', async () => {
+        Modal.close();
+        Toast.info('Ready to Go', 'Start adding your data. Changes will be backed up to Google Drive automatically');
+        resolve();
+      });
+    });
+  },
+
+  /**
+   * Show loading screen overlay
+   */
+  showLoadingScreen(message = 'Loading...') {
+    let loadingScreen = document.getElementById('app-loading-screen');
+    
+    if (!loadingScreen) {
+      loadingScreen = document.createElement('div');
+      loadingScreen.id = 'app-loading-screen';
+      loadingScreen.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.95);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        backdrop-filter: blur(4px);
+      `;
+      loadingScreen.innerHTML = `
+        <div class="spinner" style="margin-bottom: 1.5rem;"></div>
+        <p id="loading-message" style="font-size: 1.1rem; color: #666; font-weight: 500;"></p>
+      `;
+      document.body.appendChild(loadingScreen);
+    }
+    
+    document.getElementById('loading-message').textContent = message;
+    loadingScreen.style.display = 'flex';
+  },
+
+  /**
+   * Hide loading screen overlay
+   */
+  hideLoadingScreen() {
+    const loadingScreen = document.getElementById('app-loading-screen');
+    if (loadingScreen) {
+      loadingScreen.style.display = 'none';
     }
   },
 

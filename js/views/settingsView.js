@@ -43,6 +43,7 @@ const SettingsView = {
         'companyEmail',
         'companyLogo',
         'maxBackups',
+        'googleOAuthClientId',
       ]);
 
       this.backupStatus = await Backup.getStatus();
@@ -170,13 +171,47 @@ const SettingsView = {
         new Date(this.backupStatus.lastBackupTime).toLocaleTimeString()
       : 'Never';
 
-    if (!this.backupStatus.isSupported) {
-      // Fallback for unsupported browsers
+    // Determine if Client ID is from environment or manual config
+    const isEnvConfig = this.backupStatus.configSource === 'environment';
+    const configSourceLabel = isEnvConfig 
+      ? '<span class="badge badge-success">From Environment</span>' 
+      : '<span class="badge badge-info">Manual Configuration</span>';
+
+    // Google Drive OAuth Configuration Section
+    const configSection = `
+      <div class="form-group">
+        <label class="form-label" for="google-oauth-client-id">
+          Google OAuth Client ID ${configSourceLabel}
+        </label>
+        <input
+          type="text"
+          id="google-oauth-client-id"
+          class="form-control"
+          placeholder="your-client-id.apps.googleusercontent.com"
+          value="${escapeHtml(this.backupStatus.clientId || this.companySettings.googleOAuthClientId || '')}"
+          ${isEnvConfig ? 'readonly disabled' : ''}
+        />
+        <small class="form-text">
+          ${isEnvConfig 
+            ? 'Configured via environment variable (read-only). ' 
+            : 'Required for Google Drive backup. See README for setup instructions. '}
+          Environment: <strong>${this.backupStatus.environment || 'unknown'}</strong>
+        </small>
+      </div>
+      ${isEnvConfig ? '' : '<button class="btn btn-primary" id="save-oauth-config-btn" style="margin-bottom: 1.5rem;">Save OAuth Config</button>'}
+    `;
+
+    if (!this.backupStatus.isConfigured) {
+      // OAuth Client ID not configured
       return `
         <div class="alert alert-warning">
-          <strong>Auto-Backup Not Supported</strong>
-          <p>Your browser doesn't support automatic backups. Use manual backup/restore instead.</p>
+          <strong>Configuration Required</strong>
+          <p>${isEnvConfig 
+            ? 'Set GOOGLE_OAUTH_CLIENT_ID environment variable and rebuild to enable Google Drive backups.' 
+            : 'Configure your Google OAuth Client ID to enable Google Drive backups.'}</p>
         </div>
+
+        ${configSection}
 
         <div class="backup-info">
           <p><strong>Last Backup:</strong> ${lastBackupFormatted}</p>
@@ -189,15 +224,18 @@ const SettingsView = {
       `;
     }
 
-    // File System Access API supported
-    if (this.backupStatus.isEnabled) {
+    // OAuth configured - show connection status
+    if (this.backupStatus.isAuthorized) {
       return `
         <div class="alert alert-success">
-          <strong>Auto-Backup Enabled</strong>
-          <p>Your data is automatically backed up to: <strong>${escapeHtml(
-            this.backupStatus.folderPath
+          <strong>Connected to Google Drive</strong>
+          <p>Automatic backups enabled to folder: <strong>${escapeHtml(
+            this.backupStatus.folderName
           )}</strong></p>
+          <p style="margin-bottom: 0;">Environment: <strong>${this.backupStatus.environment}</strong></p>
         </div>
+
+        ${configSection}
 
         <div class="backup-info">
           <p><strong>Last Backup:</strong> ${lastBackupFormatted}</p>
@@ -219,26 +257,35 @@ const SettingsView = {
 
         <div class="backup-actions">
           <button class="btn btn-primary" id="save-backup-settings-btn">Save Settings</button>
-          <button class="btn btn-secondary" id="change-folder-btn">Change Folder</button>
-          <button class="btn btn-secondary" id="disable-auto-backup-btn">Disable Auto-Backup</button>
+          <button class="btn btn-success" id="load-drive-backup-btn">Load from Google Drive</button>
+          <button class="btn btn-danger" id="disconnect-drive-btn">Sign Out & Disconnect</button>
           <button class="btn btn-primary" id="manual-backup-btn">Download Backup</button>
           <button class="btn btn-secondary" id="manual-restore-btn">Restore from Backup</button>
         </div>
       `;
     } else {
+      // OAuth configured but not authorized
       return `
         <div class="alert alert-info">
-          <strong>Auto-Backup Disabled</strong>
-          <p>Select a folder to enable automatic backups on every data change.</p>
+          <strong>Google Drive Not Connected</strong>
+          <p>Sign in with Google to enable automatic backups.</p>
+          <p style="margin-bottom: 0;">Environment: <strong>${this.backupStatus.environment}</strong></p>
         </div>
+
+        ${configSection}
 
         <div class="backup-info">
           <p><strong>Last Backup:</strong> ${lastBackupFormatted}</p>
         </div>
 
         <div class="backup-actions">
-          <button class="btn btn-primary" id="select-folder-btn">Select Backup Folder</button>
-          <button class="btn btn-secondary" id="manual-backup-btn">Download Backup</button>
+          <button class="btn btn-success" id="connect-drive-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align: middle; margin-right: 0.5rem;">
+              <path fill="currentColor" d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27 3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10 5.35 0 9.25-3.67 9.25-9.09 0-1.15-.15-1.81-.15-1.81z"/>
+            </svg>
+            Sign in with Google
+          </button>
+          <button class="btn btn-primary" id="manual-backup-btn">Download Backup</button>
           <button class="btn btn-secondary" id="manual-restore-btn">Restore from Backup</button>
         </div>
       `;
@@ -273,27 +320,34 @@ const SettingsView = {
       });
     }
 
-    // Auto-backup buttons
-    const selectFolderBtn = container.querySelector('#select-folder-btn');
-    if (selectFolderBtn) {
-      selectFolderBtn.addEventListener('click', async () => {
-        await this.selectBackupFolder();
+    // OAuth config buttons
+    const saveOAuthConfigBtn = container.querySelector('#save-oauth-config-btn');
+    if (saveOAuthConfigBtn) {
+      saveOAuthConfigBtn.addEventListener('click', async () => {
+        await this.saveOAuthConfig();
       });
     }
 
-    const changeFolderBtn = container.querySelector('#change-folder-btn');
-    if (changeFolderBtn) {
-      changeFolderBtn.addEventListener('click', async () => {
-        await this.selectBackupFolder();
+    // Google Drive connection buttons
+    const connectDriveBtn = container.querySelector('#connect-drive-btn');
+    if (connectDriveBtn) {
+      connectDriveBtn.addEventListener('click', async () => {
+        await this.connectGoogleDrive();
       });
     }
 
-    const disableAutoBackupBtn = container.querySelector(
-      '#disable-auto-backup-btn'
-    );
-    if (disableAutoBackupBtn) {
-      disableAutoBackupBtn.addEventListener('click', async () => {
-        await this.disableAutoBackup();
+    const disconnectDriveBtn = container.querySelector('#disconnect-drive-btn');
+    if (disconnectDriveBtn) {
+      disconnectDriveBtn.addEventListener('click', async () => {
+        await this.disconnectGoogleDrive();
+      });
+    }
+
+    // Load from Google Drive button
+    const loadDriveBackupBtn = container.querySelector('#load-drive-backup-btn');
+    if (loadDriveBackupBtn) {
+      loadDriveBackupBtn.addEventListener('click', async () => {
+        await this.loadFromGoogleDrive();
       });
     }
 
@@ -419,19 +473,67 @@ const SettingsView = {
   },
 
   /**
-   * Select backup folder
+   * Save OAuth configuration
    */
-  async selectBackupFolder() {
+  async saveOAuthConfig() {
     try {
-      const success = await Backup.selectBackupFolder();
+      const clientId = document.getElementById('google-oauth-client-id').value.trim();
+
+      if (!clientId) {
+        Toast.error('Validation Error', 'OAuth Client ID is required');
+        return;
+      }
+
+      await SettingsStore.set('googleOAuthClientId', clientId);
+      
+      Toast.success(
+        'Configuration Saved',
+        'Google OAuth Client ID saved. You can now connect to Google Drive.'
+      );
+      
+      // Refresh view
+      App.refresh();
+    } catch (error) {
+      console.error('Failed to save OAuth config:', error);
+      Toast.error('Save Failed', error.message);
+    }
+  },
+
+  /**
+   * Connect to Google Drive
+   */
+  async connectGoogleDrive() {
+    try {
+      App.showLoadingScreen('Connecting to Google Drive...');
+      const success = await Backup.connectGoogleDrive();
+      App.hideLoadingScreen();
       if (success) {
         // Refresh view to show new status
         App.refresh();
       }
     } catch (error) {
-      console.error('Failed to select backup folder:', error);
-      Toast.error('Selection Failed', error.message);
+      console.error('Failed to connect to Google Drive:', error);
+      App.hideLoadingScreen();
+      Toast.error('Connection Failed', error.message);
     }
+  },
+
+  /**
+   * Disconnect from Google Drive
+   */
+  async disconnectGoogleDrive() {
+    Modal.confirm({
+      title: 'Disconnect Google Drive',
+      message:
+        'Are you sure you want to disconnect from Google Drive? Automatic backups will be disabled. You can still use manual backup.',
+      icon: '⚠️',
+      confirmText: 'Disconnect',
+      confirmClass: 'btn-warning',
+      onConfirm: async () => {
+        await Backup.disableAutoBackup();
+        App.refresh();
+      },
+    });
   },
 
   /**
@@ -461,24 +563,6 @@ const SettingsView = {
   },
 
   /**
-   * Disable auto-backup
-   */
-  async disableAutoBackup() {
-    Modal.confirm({
-      title: 'Disable Auto-Backup',
-      message:
-        'Are you sure you want to disable automatic backups? You can still use manual backup.',
-      icon: '⚠️',
-      confirmText: 'Disable',
-      confirmClass: 'btn-warning',
-      onConfirm: async () => {
-        await Backup.disableAutoBackup();
-        App.refresh();
-      },
-    });
-  },
-
-  /**
    * Download manual backup
    */
   async downloadBackup() {
@@ -504,7 +588,9 @@ const SettingsView = {
       confirmClass: 'btn-danger',
       onConfirm: async () => {
         try {
+          App.showLoadingScreen('Restoring data from backup...');
           await Backup.uploadBackup();
+          App.hideLoadingScreen();
           Toast.success(
             'Restore Complete',
             'Data has been restored. Refreshing app...'
@@ -516,6 +602,7 @@ const SettingsView = {
           }, 1500);
         } catch (error) {
           console.error('Failed to restore backup:', error);
+          App.hideLoadingScreen();
           Toast.error('Restore Failed', error.message);
         }
       },
@@ -548,6 +635,45 @@ const SettingsView = {
         } catch (error) {
           console.error('Failed to clear data:', error);
           Toast.error('Clear Failed', error.message);
+        }
+      },
+    });
+  },
+
+  /**
+   * Load latest backup from Google Drive
+   */
+  async loadFromGoogleDrive() {
+    Modal.confirm({
+      title: 'Load from Google Drive',
+      message:
+        'This will replace all current data with the latest backup from Google Drive. Make sure you have saved any changes you want to keep.',
+      icon: '☁️',
+      confirmText: 'Load Backup',
+      confirmClass: 'btn-primary',
+      onConfirm: async () => {
+        try {
+          App.showLoadingScreen('Loading backup from Google Drive...');
+          const loaded = await Backup.loadLatestBackup();
+          App.hideLoadingScreen();
+          
+          if (loaded) {
+            Toast.success(
+              'Backup Loaded',
+              'Data has been restored. Refreshing app...'
+            );
+
+            // Refresh the app after short delay
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } else {
+            Toast.info('No Backup Found', 'No backup files found in Google Drive');
+          }
+        } catch (error) {
+          console.error('Failed to load backup from Google Drive:', error);
+          App.hideLoadingScreen();
+          Toast.error('Load Failed', error.message);
         }
       },
     });

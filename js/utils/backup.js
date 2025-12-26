@@ -4,121 +4,101 @@
 
 /**
  * Backup Manager - Handle data export/import and auto-save
+ * Uses Google Drive API for cloud backup
  */
 const Backup = {
-  folderHandle: null,
   isAutoSaveEnabled: false,
   autoSaveTimeout: null,
   autoSaveDebounceMs: 2000, // Wait 2 seconds after last change before backing up
   isDirty: false, // Flag to track if data has changed since last backup
 
-  /**
-   * Check if File System Access API is supported
-   * @returns {boolean}
-   */
-  isFileSystemAccessSupported() {
-    return 'showDirectoryPicker' in window;
-  },
 
   /**
    * Initialize backup system
-   * Load saved folder handle if available
+   * Load Google Drive OAuth Client ID from config or settings
    */
   async init() {
-    if (!this.isFileSystemAccessSupported()) {
-      console.log('File System Access API not supported, using fallback');
-      return;
-    }
-
     try {
-      // Try to load saved folder handle from IndexedDB
-      // Note: FileSystemDirectoryHandle can be stored directly in IndexedDB
-      const savedHandleData = await SettingsStore.get('backupFolderHandle');
-
-      if (savedHandleData) {
-        this.folderHandle = savedHandleData;
-
-        // Verify we still have permission
-        const permission = await this.folderHandle.queryPermission({
-          mode: 'readwrite',
-        });
-        if (permission === 'granted') {
-          this.isAutoSaveEnabled = true;
-          console.log('Auto-backup enabled with existing folder');
-        } else {
-          // Try to request permission again
-          const newPermission = await this.folderHandle.requestPermission({
-            mode: 'readwrite',
-          });
-          if (newPermission === 'granted') {
-            this.isAutoSaveEnabled = true;
-            console.log('Auto-backup re-enabled after permission request');
-          } else {
-            // Permission was revoked, clear the handle
-            this.folderHandle = null;
-            await SettingsStore.delete('backupFolderHandle');
-            await SettingsStore.delete('backupFolderPath');
-          }
+      // First, try to get OAuth Client ID from AppConfig (environment variable via build)
+      let clientId = null;
+      
+      if (window.AppConfig && window.AppConfig.googleOAuthClientId) {
+        clientId = window.AppConfig.googleOAuthClientId;
+        console.log('Using Google OAuth Client ID from environment configuration');
+      } else {
+        // Fall back to manual configuration from settings
+        clientId = await SettingsStore.get('googleOAuthClientId');
+        if (clientId) {
+          console.log('Using Google OAuth Client ID from manual configuration');
         }
+      }
+      
+      if (!clientId) {
+        console.log('Google OAuth Client ID not configured');
+        return;
+      }
+      
+      // Initialize Google Drive
+      await GoogleDrive.init(clientId);
+      
+      // Check if already authorized
+      if (GoogleDrive.isAuthorized) {
+        this.isAutoSaveEnabled = true;
+        console.log('Auto-backup enabled with Google Drive');
       }
     } catch (error) {
       console.error('Failed to initialize backup system:', error);
-      this.folderHandle = null;
       this.isAutoSaveEnabled = false;
     }
   },
 
+
   /**
-   * Select backup folder
+   * Connect to Google Drive
+   * Shows OAuth sign-in flow
    * @returns {Promise<boolean>} Success status
    */
-  async selectBackupFolder() {
-    if (!this.isFileSystemAccessSupported()) {
-      Toast.warning(
-        'Not Supported',
-        'File System Access API is not supported in this browser'
-      );
-      return false;
-    }
-
+  async connectGoogleDrive() {
     try {
-      // Prompt user to select folder
-      this.folderHandle = await window.showDirectoryPicker({
-        mode: 'readwrite',
-        startIn: 'documents',
-      });
-
-      // Request permission
-      const permission = await this.folderHandle.requestPermission({
-        mode: 'readwrite',
-      });
-
-      if (permission !== 'granted') {
-        Toast.error(
-          'Permission Denied',
-          'Cannot save backups without folder access'
-        );
-        this.folderHandle = null;
-        return false;
+      // First check for environment config
+      let clientId = null;
+      
+      if (window.AppConfig && window.AppConfig.googleOAuthClientId) {
+        clientId = window.AppConfig.googleOAuthClientId;
+      } else {
+        // Get OAuth Client ID from settings
+        clientId = await SettingsStore.get('googleOAuthClientId');
+        
+        if (!clientId) {
+          Toast.error(
+            'Configuration Required',
+            'Please configure Google OAuth Client ID in Settings first'
+          );
+          return false;
+        }
       }
-
-      // Save folder handle
-      await SettingsStore.set('backupFolderHandle', this.folderHandle);
-      await SettingsStore.set('backupFolderPath', this.folderHandle.name);
+      
+      // Initialize if not already done
+      if (!GoogleDrive.isInitialized) {
+        await GoogleDrive.init(clientId);
+      }
+      
+      // Request authorization
+      await GoogleDrive.authorize();
+      
+      // Ensure app folder exists
+      await GoogleDrive.ensureAppFolder();
+      
       this.isAutoSaveEnabled = true;
-
+      
       Toast.success(
-        'Folder Selected',
-        `Auto-backup enabled to: ${this.folderHandle.name}`
+        'Connected',
+        `Auto-backup enabled to Google Drive (${GoogleDrive.getFolderName()})`
       );
       return true;
     } catch (error) {
-      if (error.name === 'AbortError') {
-        // User cancelled
-        return false;
-      }
-      console.error('Failed to select backup folder:', error);
-      Toast.error('Selection Failed', error.message);
+      console.error('Failed to connect to Google Drive:', error);
+      Toast.error('Connection Failed', error.message);
       return false;
     }
   },
@@ -129,7 +109,7 @@ const Backup = {
    * Waits for 2 seconds of inactivity before actually saving
    */
   async autoSave() {
-    if (!this.isAutoSaveEnabled || !this.folderHandle) {
+    if (!this.isAutoSaveEnabled || !GoogleDrive.isAuthorized) {
       return;
     }
 
@@ -158,6 +138,12 @@ const Backup = {
       return;
     }
 
+    // Check if authorized
+    if (!GoogleDrive.isAuthorized) {
+      console.log('Auto-backup skipped: not authorized');
+      return;
+    }
+
     try {
       // Export data
       const data = await Database.exportAll();
@@ -167,13 +153,8 @@ const Backup = {
       const timestamp = getISOTimestamp().replace(/[:.]/g, '-');
       const filename = `backup-${timestamp}.json`;
 
-      // Write to file
-      const fileHandle = await this.folderHandle.getFileHandle(filename, {
-        create: true,
-      });
-      const writable = await fileHandle.createWritable();
-      await writable.write(jsonString);
-      await writable.close();
+      // Upload to Google Drive
+      await GoogleDrive.uploadFile(filename, jsonString, 'application/json');
 
       // Update last backup time and clear dirty flag
       await SettingsStore.set('lastBackupTime', getISOTimestamp());
@@ -186,14 +167,12 @@ const Backup = {
     } catch (error) {
       console.error('Auto-backup failed:', error);
 
-      // If permission error, disable auto-save
-      if (error.name === 'NotAllowedError') {
+      // If authorization error, disable auto-save
+      if (error.message.includes('Authorization') || error.message.includes('sign in')) {
         this.isAutoSaveEnabled = false;
-        this.folderHandle = null;
-        await SettingsStore.delete('backupFolderHandle');
         Toast.warning(
           'Auto-Backup Disabled',
-          'Permission to backup folder was revoked'
+          'Google Drive authorization expired. Please sign in again.'
         );
       }
     }
@@ -212,33 +191,22 @@ const Backup = {
         return;
       }
 
-      // Get all backup files from the folder
-      const backupFiles = [];
-      for await (const entry of this.folderHandle.values()) {
-        if (entry.kind === 'file') {
-          const name = entry.name;
-          // Check if it matches backup file pattern: backup-YYYY-MM-DDTHH-MM-SS-sssZ.json
-          if (
-            /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(
-              name
-            )
-          ) {
-            backupFiles.push({
-              name: name,
-              handle: entry,
-            });
-          }
-        }
-      }
+      // Get all backup files from Google Drive
+      const files = await GoogleDrive.listFiles();
+      
+      // Filter backup files by pattern: backup-YYYY-MM-DDTHH-MM-SS-sssZ.json
+      const backupFiles = files.filter(file => 
+        /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(file.name)
+      );
 
-      // Sort by filename (which includes timestamp) - oldest first
+      // Sort by name (which includes timestamp) - oldest first
       backupFiles.sort((a, b) => a.name.localeCompare(b.name));
 
       // Delete oldest files if we exceed the limit
       const filesToDelete = backupFiles.length - maxBackups;
       if (filesToDelete > 0) {
         for (let i = 0; i < filesToDelete; i++) {
-          await this.folderHandle.removeEntry(backupFiles[i].name);
+          await GoogleDrive.deleteFile(backupFiles[i].id);
           console.log(`Deleted old backup: ${backupFiles[i].name}`);
         }
       }
@@ -371,13 +339,11 @@ const Backup = {
    * Clear auto-backup settings
    */
   async disableAutoBackup() {
-    this.folderHandle = null;
     this.isAutoSaveEnabled = false;
-    await SettingsStore.delete('backupFolderHandle');
-    await SettingsStore.delete('backupFolderPath');
+    await GoogleDrive.signOut();
     Toast.info(
       'Auto-Backup Disabled',
-      'Automatic backups have been turned off'
+      'Disconnected from Google Drive'
     );
   },
 
@@ -387,13 +353,88 @@ const Backup = {
    */
   async getStatus() {
     const lastBackupTime = await SettingsStore.get('lastBackupTime');
-    const folderPath = await SettingsStore.get('backupFolderPath');
+    const driveStatus = GoogleDrive.getStatus();
+    
+    // Check if client ID is from environment or manual config
+    const hasEnvConfig = !!(window.AppConfig && window.AppConfig.googleOAuthClientId);
+    const manualClientId = await SettingsStore.get('googleOAuthClientId');
+    const clientId = hasEnvConfig ? window.AppConfig.googleOAuthClientId : manualClientId;
 
     return {
-      isSupported: this.isFileSystemAccessSupported(),
+      isConfigured: !!clientId,
+      configSource: hasEnvConfig ? 'environment' : 'manual',
+      clientId: clientId || null,
+      isAuthorized: driveStatus.isAuthorized,
       isEnabled: this.isAutoSaveEnabled,
-      folderPath: folderPath || null,
+      environment: driveStatus.environment,
+      folderName: driveStatus.folderName,
       lastBackupTime: lastBackupTime || null,
     };
+  },
+
+  /**
+   * Load the latest backup from Google Drive
+   * @returns {Promise<boolean>} True if backup was loaded, false if none found
+   */
+  async loadLatestBackup() {
+    if (!GoogleDrive.isAuthorized) {
+      throw new Error('Not authorized to access Google Drive');
+    }
+
+    try {
+      // Get all backup files from Google Drive
+      const files = await GoogleDrive.listFiles();
+      
+      // Filter backup files by pattern: backup-YYYY-MM-DDTHH-MM-SS-sssZ.json
+      const backupFiles = files.filter(file => 
+        /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(file.name)
+      );
+
+      if (backupFiles.length === 0) {
+        console.log('No backup files found in Google Drive');
+        return false;
+      }
+
+      // Sort by name (which includes timestamp) - newest first
+      backupFiles.sort((a, b) => b.name.localeCompare(a.name));
+      const latestBackup = backupFiles[0];
+
+      console.log(`Loading latest backup: ${latestBackup.name}`);
+
+      // Download and import the backup
+      const content = await GoogleDrive.downloadFile(latestBackup.id);
+      await this.importData(content, true);
+
+      console.log('Successfully loaded backup from Google Drive');
+      return true;
+    } catch (error) {
+      console.error('Failed to load backup from Google Drive:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Check if there are any backups in Google Drive
+   * @returns {Promise<boolean>} True if backups exist, false otherwise
+   */
+  async hasBackups() {
+    if (!GoogleDrive.isAuthorized) {
+      return false;
+    }
+
+    try {
+      // Get all backup files from Google Drive
+      const files = await GoogleDrive.listFiles();
+      
+      // Filter backup files by pattern: backup-YYYY-MM-DDTHH-MM-SS-sssZ.json
+      const backupFiles = files.filter(file => 
+        /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(file.name)
+      );
+
+      return backupFiles.length > 0;
+    } catch (error) {
+      console.error('Failed to check for backups:', error);
+      return false;
+    }
   },
 };

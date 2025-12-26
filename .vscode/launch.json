@@ -6,23 +6,15 @@
   "configurations": [
     {
       "name": "Launch Dev (Chrome)",
-      "type": "pwa-chrome",
+      "type": "chrome",
       "request": "launch",
       "preLaunchTask": "npm: dev",
       "url": "http://localhost:8080",
       "webRoot": "${workspaceFolder}/public",
-      "breakOnLoad": false,
       "sourceMaps": true,
       "sourceMapPathOverrides": {
         "*": "${workspaceFolder}/*"
       }
-    },
-    {
-      "name": "Open index.html (local)",
-      "type": "pwa-chrome",
-      "request": "launch",
-      "file": "${workspaceFolder}/index.html",
-      "webRoot": "${workspaceFolder}"
     }
   ]
 }

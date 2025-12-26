@@ -2,19 +2,22 @@
 
 ## Project Architecture
 
-This is a **single-user, browser-based invoice management app** built with **vanilla JavaScript** (no frameworks). All data is stored locally in IndexedDB with automatic backup functionality. The app uses hash-based routing (`#/clients`, `#/invoices`) and follows a single-page application pattern.
+This is a **single-user, browser-based invoice management app** built with **vanilla JavaScript** (no frameworks). All data is stored locally in IndexedDB with automatic backup to Google Drive. The app uses hash-based routing (`#/clients`, `#/invoices`) and follows a single-page application pattern.
 
 **Tech Stack:**
 
 - Vanilla JS (ES6+), HTML5, CSS3 (no transpilation/build process)
 - IndexedDB for local storage (`InvoiceAppDB` v2)
-- File System Access API for auto-backup (Chrome/Edge only)
+- Google Drive API with OAuth 2.0 for cloud backup (all browsers)
+- Google Identity Services for client-side authentication
 - jsPDF for PDF generation (included via CDN)
 
 **Key Files:**
 
 - `js/app.js` - Router and app initialization
 - `js/db/database.js` - IndexedDB setup with 5 stores: `clients`, `services`, `timeEntries`, `invoices`, `settings`
+- `js/utils/googleDrive.js` - Google Drive API client with OAuth 2.0
+- `js/utils/backup.js` - Backup/restore with Google Drive integration
 - `js/views/*.js` - View modules for each page
 - `js/components/*.js` - Reusable UI components (Modal, Toast, Table, Spinner)
 - `js/utils/helpers.js` - UUID generation, date/currency formatting, calculations
@@ -158,6 +161,17 @@ npx serve
 
 ## Current Project Status
 
-All phases complete. The app includes full CRUD operations for clients, services, time entries, and invoices, plus dashboard with metrics, comprehensive reports with CSV export, PDF invoice generation, and automatic backup/restore functionality. Reference `invoice-app-tasks.md` for the complete task list.
+All phases complete. The app includes full CRUD operations for clients, services, time entries, and invoices, plus dashboard with metrics, comprehensive reports with CSV export, PDF invoice generation, and automatic backup/restore with Google Drive integration. 
+
+**Backup System:**
+- Uses Google Drive API with OAuth 2.0 (client-side)
+- `drive.file` scope for app-specific folder access
+- Separate folders for dev (`InvoiceApp-dev`) and prod (`InvoiceApp`)
+- Folders are visible in user's Drive (not hidden)
+- Environment automatically detected (localhost = dev, otherwise = prod)
+- OAuth Client ID configured in Settings view
+- Tokens stored in IndexedDB, expire after 1 hour (normal for apps in "Testing" mode)
+
+Reference `invoice-app-tasks.md` for the complete task list.
 
 When implementing new features, follow the exact patterns in `invoicesView.js` (most comprehensive example) or `clientsView.js` (simpler example).
