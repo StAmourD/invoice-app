@@ -14,7 +14,7 @@ const TimeEntriesView = {
   filters: {
     clientId: '',
     startDate: '',
-    billableOnly: false,
+    status: 'unbilled',
   },
 
   /**
@@ -96,7 +96,7 @@ const TimeEntriesView = {
                             }>
                                 ${escapeHtml(c.name)}
                             </option>
-                        `
+                        `,
                           )
                           .join('')}
                     </select>
@@ -110,12 +110,13 @@ const TimeEntriesView = {
                 </div>
 
                 <div class="filter-group">
-                    <label class="form-checkbox" style="margin-top: 20px;">
-                        <input type="checkbox" id="filter-billable" ${
-                          this.filters.billableOnly ? 'checked' : ''
-                        }>
-                        <span>Billable only</span>
-                    </label>
+                    <label>Status</label>
+                    <select id="filter-status" class="form-select">
+                        <option value="" ${this.filters.status === '' ? 'selected' : ''}>All Statuses</option>
+                        <option value="invoiced" ${this.filters.status === 'invoiced' ? 'selected' : ''}>Invoiced</option>
+                        <option value="unbilled" ${this.filters.status === 'unbilled' ? 'selected' : ''}>Unbilled</option>
+                        <option value="non-billable" ${this.filters.status === 'non-billable' ? 'selected' : ''}>Non-billable</option>
+                    </select>
                 </div>
 
                 <div class="filter-actions">
@@ -146,8 +147,12 @@ const TimeEntriesView = {
       filtered = filtered.filter((e) => parseLocalDate(e.startDate) >= start);
     }
 
-    if (this.filters.billableOnly) {
-      filtered = filtered.filter((e) => e.billable);
+    if (this.filters.status === 'invoiced') {
+      filtered = filtered.filter((e) => !!e.invoiceId);
+    } else if (this.filters.status === 'unbilled') {
+      filtered = filtered.filter((e) => e.billable && !e.invoiceId);
+    } else if (this.filters.status === 'non-billable') {
+      filtered = filtered.filter((e) => !e.billable);
     }
 
     return filtered;
@@ -240,7 +245,7 @@ const TimeEntriesView = {
     const sortedData = Table.sortData(
       entries,
       this.sortColumn,
-      this.sortDirection
+      this.sortDirection,
     );
 
     // Calculate totals
@@ -290,12 +295,10 @@ const TimeEntriesView = {
         this.renderView(container);
       });
 
-    document
-      .getElementById('filter-billable')
-      .addEventListener('change', (e) => {
-        this.filters.billableOnly = e.target.checked;
-        this.renderView(container);
-      });
+    document.getElementById('filter-status').addEventListener('change', (e) => {
+      this.filters.status = e.target.value;
+      this.renderView(container);
+    });
 
     document
       .getElementById('clear-filters-btn')
@@ -303,7 +306,7 @@ const TimeEntriesView = {
         this.filters = {
           clientId: '',
           startDate: '',
-          billableOnly: false,
+          status: 'unbilled',
         };
         this.renderView(container);
       });
@@ -323,7 +326,7 @@ const TimeEntriesView = {
         this.setupEventListeners(container);
       },
       this.sortColumn,
-      this.sortDirection
+      this.sortDirection,
     );
 
     // Edit buttons
@@ -384,7 +387,7 @@ const TimeEntriesView = {
                             }>
                                 ${escapeHtml(c.name)}
                             </option>
-                        `
+                        `,
                           )
                           .join('')}
                     </select>
@@ -404,10 +407,10 @@ const TimeEntriesView = {
                                 : ''
                             }>
                                 ${escapeHtml(s.name)} - ${formatCurrency(
-                              s.rate
-                            )}/hr
+                                  s.rate,
+                                )}/hr
                             </option>
-                        `
+                        `,
                           )
                           .join('')}
                     </select>
@@ -423,9 +426,15 @@ const TimeEntriesView = {
                         min="0"
                         step="0.01"
                         value="${
-                          entry 
+                          entry
                             ? entry.rate.toFixed(2)
-                            : (this.services.find(s => s.id === (entry?.serviceId || defaultServiceId))?.rate || 0).toFixed(2)
+                            : (
+                                this.services.find(
+                                  (s) =>
+                                    s.id ===
+                                    (entry?.serviceId || defaultServiceId),
+                                )?.rate || 0
+                              ).toFixed(2)
                         }"
                         required
                     >
@@ -502,9 +511,11 @@ const TimeEntriesView = {
     // Update rate field when service changes
     const serviceSelect = document.getElementById('entry-service');
     const rateField = document.getElementById('entry-rate');
-    
+
     serviceSelect.addEventListener('change', (e) => {
-      const selectedService = this.services.find(s => s.id === e.target.value);
+      const selectedService = this.services.find(
+        (s) => s.id === e.target.value,
+      );
       if (selectedService) {
         rateField.value = selectedService.rate.toFixed(2);
       }
@@ -585,14 +596,14 @@ const TimeEntriesView = {
         });
         Toast.success(
           'Time Entry Updated',
-          'Time entry has been updated successfully'
+          'Time entry has been updated successfully',
         );
       } else {
         // Create
         const created = await TimeEntryStore.add(formData);
         Toast.success(
           'Time Entry Created',
-          'Time entry has been added successfully'
+          'Time entry has been added successfully',
         );
       }
 
@@ -633,3 +644,4 @@ const TimeEntriesView = {
     });
   },
 };
+
