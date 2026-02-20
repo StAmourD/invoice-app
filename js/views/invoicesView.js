@@ -82,7 +82,7 @@ const InvoicesView = {
                             }>
                                 ${escapeHtml(c.name)}
                             </option>
-                        `
+                        `,
                           )
                           .join('')}
                     </select>
@@ -158,7 +158,7 @@ const InvoicesView = {
         sortable: true,
         render: (invoice) =>
           `<a href="#/invoices/${invoice.id}">${escapeHtml(
-            invoice.invoiceNumber
+            invoice.invoiceNumber,
           )}${invoice.version ? '-' + invoice.version : ''}</a>`,
       },
       {
@@ -224,7 +224,7 @@ const InvoicesView = {
     const sortedData = Table.sortData(
       invoices,
       this.sortColumn,
-      this.sortDirection
+      this.sortDirection,
     );
 
     // Calculate totals
@@ -256,10 +256,10 @@ const InvoicesView = {
                 <div style="padding: 1rem; background: var(--color-gray-50); border-top: 1px solid var(--color-gray-200); display: flex; justify-content: flex-end; gap: 2rem; font-weight: 600;">
                     <div>Total: ${formatCurrency(totalAmount)}</div>
                     <div style="color: var(--color-success);">Paid: ${formatCurrency(
-                      paidAmount
+                      paidAmount,
                     )}</div>
                     <div style="color: var(--color-warning);">Unpaid: ${formatCurrency(
-                      unpaidAmount
+                      unpaidAmount,
                     )}</div>
                 </div>
             `
@@ -317,7 +317,7 @@ const InvoicesView = {
         this.setupEventListeners(container);
       },
       this.sortColumn,
-      this.sortDirection
+      this.sortDirection,
     );
 
     // Toggle paid buttons
@@ -348,7 +348,7 @@ const InvoicesView = {
       const invoice = await InvoiceStore.togglePaid(invoiceId);
       Toast.success(
         invoice.paid ? 'Invoice Marked Paid' : 'Invoice Marked Unpaid',
-        `Invoice ${invoice.invoiceNumber} has been updated`
+        `Invoice ${invoice.invoiceNumber} has been updated`,
       );
       App.refresh();
     } catch (error) {
@@ -375,7 +375,7 @@ const InvoicesView = {
           await InvoiceStore.delete(invoice.id);
           Toast.success(
             'Invoice Deleted',
-            `Invoice ${invoice.invoiceNumber} has been deleted`
+            `Invoice ${invoice.invoiceNumber} has been deleted`,
           );
           App.refresh();
         } catch (error) {
@@ -408,7 +408,7 @@ const InvoicesView = {
     let defaultClientId = '';
     if (invoices.length > 0) {
       const mostRecentInvoice = invoices.sort(
-        (a, b) => new Date(b.issueDate) - new Date(a.issueDate)
+        (a, b) => new Date(b.issueDate) - new Date(a.issueDate),
       )[0];
       defaultClientId = mostRecentInvoice.clientId;
     }
@@ -441,7 +441,7 @@ const InvoicesView = {
                                 <option value="${c.id}" ${
                                   c.id === defaultClientId ? 'selected' : ''
                                 }>${escapeHtml(c.name)}</option>
-                            `
+                            `,
                               )
                               .join('')}
                         </select>
@@ -486,7 +486,7 @@ const InvoicesView = {
                     <div class="empty-state-icon">⏱️</div>
                     <h3 class="empty-state-title">No Unbilled Time Entries</h3>
                     <p class="empty-state-description">There are no billable time entries for ${escapeHtml(
-                      client.name
+                      client.name,
                     )}.</p>
                     <a href="#/time-entries" class="btn btn-primary">Add Time Entries</a>
                 </div>
@@ -512,7 +512,7 @@ const InvoicesView = {
                 ${timeEntries
                   .map((entry) => {
                     const service = services.find(
-                      (s) => s.id === entry.serviceId
+                      (s) => s.id === entry.serviceId,
                     );
                     const hours = entry.hours;
                     const amount = entryAmounts[entry.id];
@@ -526,16 +526,18 @@ const InvoicesView = {
                             }" data-amount="${amount}" checked>
                             <div class="selection-item-content">
                                 <div class="selection-item-title">${escapeHtml(
-                                  entry.description || 'No description'
+                                  entry.description || 'No description',
                                 )}</div>
                                 <div class="selection-item-subtitle">
                                     ${formatDate(entry.startDate)} • ${
-                      service ? escapeHtml(service.name) : 'Unknown'
-                    } • ${formatHours(hours)}
+                                      service
+                                        ? escapeHtml(service.name)
+                                        : 'Unknown'
+                                    } • ${formatHours(hours)}
                                 </div>
                             </div>
                             <div class="selection-item-amount">${formatCurrency(
-                              amount
+                              amount,
                             )}</div>
                         </div>
                     `;
@@ -552,14 +554,14 @@ const InvoicesView = {
                     <div class="form-group">
                         <label for="invoice-due-date" class="form-label required">Due Date</label>
                         <input type="date" id="invoice-due-date" class="form-input" value="${formatDateForInput(
-                          addDays(new Date(), client.daysToPay)
+                          addDays(new Date(), client.daysToPay),
                         )}" required>
                     </div>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-gray-200);">
                     <div style="font-size: 1.25rem; font-weight: 600;">
                         Total: <span id="invoice-total">${formatCurrency(
-                          selectedTotal
+                          selectedTotal,
                         )}</span>
                     </div>
                     <button class="btn btn-primary btn-lg" id="create-invoice-final-btn">
@@ -609,7 +611,7 @@ const InvoicesView = {
     if (checkboxes.length === 0) {
       Toast.error(
         'No Entries Selected',
-        'Please select at least one time entry'
+        'Please select at least one time entry',
       );
       return;
     }
@@ -626,7 +628,7 @@ const InvoicesView = {
     if (!issueDate || !dueDate) {
       Toast.error(
         'Validation Error',
-        'Please enter both issue date and due date'
+        'Please enter both issue date and due date',
       );
       return;
     }
@@ -634,7 +636,7 @@ const InvoicesView = {
     if (parseLocalDate(dueDate) < parseLocalDate(issueDate)) {
       Toast.error(
         'Validation Error',
-        'Due date must be on or after issue date'
+        'Due date must be on or after issue date',
       );
       return;
     }
@@ -659,7 +661,7 @@ const InvoicesView = {
 
       Toast.success(
         'Invoice Created',
-        `Invoice ${invoice.invoiceNumber} has been created`
+        `Invoice ${invoice.invoiceNumber} has been created`,
       );
       window.location.hash = `#/invoices/${invoice.id}`;
     } catch (error) {
@@ -714,8 +716,9 @@ const InvoicesView = {
             <div class="invoice-preview no-break">
                 <div class="invoice-header">
                     <div class="company-info">
+                        ${settings.companyLogo ? `<img src="${settings.companyLogo}" alt="Company Logo" style="max-width: 160px; max-height: 80px; display: block; margin-bottom: 0.5rem;">` : ''}
                         <h1>${escapeHtml(
-                          settings.companyName || 'My Company'
+                          settings.companyName || 'My Company',
                         )}</h1>
                         <p>${escapeHtml(settings.companyAddress || '')}</p>
                         <p>${escapeHtml(settings.companyEmail || '')}</p>
@@ -723,13 +726,13 @@ const InvoicesView = {
                     <div class="invoice-meta">
                         <h2>INVOICE</h2>
                         <p><strong>Invoice #:</strong> ${escapeHtml(
-                          invoice.invoiceNumber
+                          invoice.invoiceNumber,
                         )}${invoice.version ? '-' + invoice.version : ''}</p>
                         <p><strong>Date:</strong> ${formatDate(
-                          invoice.issueDate
+                          invoice.issueDate,
                         )}</p>
                         <p><strong>Due Date:</strong> ${formatDate(
-                          invoice.dueDate
+                          invoice.dueDate,
                         )}</p>
                         <p>
                             <strong>Status:</strong> 
@@ -737,8 +740,8 @@ const InvoicesView = {
                               invoice.paid
                                 ? '<span class="badge badge-success">Paid</span>'
                                 : isOverdue(invoice.dueDate)
-                                ? '<span class="badge badge-danger">Overdue</span>'
-                                : '<span class="badge badge-warning">Unpaid</span>'
+                                  ? '<span class="badge badge-danger">Overdue</span>'
+                                  : '<span class="badge badge-warning">Unpaid</span>'
                             }
                         </p>
                     </div>
@@ -766,15 +769,15 @@ const InvoicesView = {
                             ${timeEntries
                               .map((entry) => {
                                 const service = services.find(
-                                  (s) => s.id === entry.serviceId
+                                  (s) => s.id === entry.serviceId,
                                 );
                                 const hours = entry.hours;
                                 const rate = entry.rate || 0;
                                 const amount = hours * rate;
                                 return `
                                     <tr>
-                                        <td>${escapeHtml(
-                                          entry.description || 'No description'
+                                        <td style="white-space: pre-line;">${escapeHtml(
+                                          entry.description || 'No description',
                                         )}</td>
                                         <td>${
                                           service
@@ -782,13 +785,13 @@ const InvoicesView = {
                                             : 'Unknown'
                                         }</td>
                                         <td class="number">${formatHours(
-                                          hours
+                                          hours,
                                         )}</td>
                                         <td class="number">${formatCurrency(
-                                          rate
+                                          rate,
                                         )}</td>
                                         <td class="number">${formatCurrency(
-                                          amount
+                                          amount,
                                         )}</td>
                                     </tr>
                                 `;
@@ -799,7 +802,7 @@ const InvoicesView = {
                             <tr>
                                 <td colspan="4" style="text-align: right;"><strong>Total</strong></td>
                                 <td class="number"><strong>${formatCurrency(
-                                  invoice.total
+                                  invoice.total,
                                 )}</strong></td>
                             </tr>
                         </tfoot>
@@ -847,7 +850,7 @@ const InvoicesView = {
           client,
           timeEntries,
           serviceMap,
-          settings
+          settings,
         );
       });
 
@@ -873,7 +876,7 @@ const InvoicesView = {
                         required
                     >
                     <div class="form-hint">Due date must be on or after issue date (${formatDate(
-                      invoice.issueDate
+                      invoice.issueDate,
                     )})</div>
                 </div>
 
@@ -894,7 +897,7 @@ const InvoicesView = {
       if (parseLocalDate(newDueDate) < parseLocalDate(invoice.issueDate)) {
         Toast.error(
           'Validation Error',
-          'Due date must be on or after issue date'
+          'Due date must be on or after issue date',
         );
         return;
       }
@@ -931,7 +934,7 @@ const InvoicesView = {
     // Separate billable entries (both in and not in invoice)
     const invoicedEntries = allEntries.filter((e) => currentEntryIds.has(e.id));
     const availableEntries = allEntries.filter(
-      (e) => !currentEntryIds.has(e.id) && e.billable && !e.invoiceId
+      (e) => !currentEntryIds.has(e.id) && e.billable && !e.invoiceId,
     );
 
     const title = 'Manage Invoice Entries';
@@ -952,7 +955,7 @@ const InvoicesView = {
                     <div style="display: flex; justify-content: space-between; align-items: start;">
                       <div>
                         <div style="font-weight: 600;">${escapeHtml(
-                          entry.description || 'No description'
+                          entry.description || 'No description',
                         )}</div>
                         <div style="font-size: 0.875rem; color: var(--color-gray-600);">
                           ${client ? escapeHtml(client.name) : 'Unknown'} • 
@@ -981,7 +984,7 @@ const InvoicesView = {
                 : availableEntries
                     .map((entry) => {
                       const service = services.find(
-                        (s) => s.id === entry.serviceId
+                        (s) => s.id === entry.serviceId,
                       );
                       const client = clientMap.get(entry.clientId);
                       return `
@@ -991,7 +994,7 @@ const InvoicesView = {
                     <div style="display: flex; justify-content: space-between; align-items: start;">
                       <div>
                         <div style="font-weight: 600;">${escapeHtml(
-                          entry.description || 'No description'
+                          entry.description || 'No description',
                         )}</div>
                         <div style="font-size: 0.875rem; color: var(--color-gray-600);">
                           ${client ? escapeHtml(client.name) : 'Unknown'} • 
@@ -1038,7 +1041,7 @@ const InvoicesView = {
         const client = clientMap.get(entry.clientId);
 
         const entryEl = document.querySelector(
-          `#available-entries [data-id="${entryId}"]`
+          `#available-entries [data-id="${entryId}"]`,
         );
         entryEl.remove();
 
@@ -1050,7 +1053,7 @@ const InvoicesView = {
             <div style="display: flex; justify-content: space-between; align-items: start;">
               <div>
                 <div style="font-weight: 600;">${escapeHtml(
-                  entry.description || 'No description'
+                  entry.description || 'No description',
                 )}</div>
                 <div style="font-size: 0.875rem; color: var(--color-gray-600);">
                   ${client ? escapeHtml(client.name) : 'Unknown'} • 
@@ -1068,7 +1071,7 @@ const InvoicesView = {
         // Setup new remove button
         document
           .querySelector(
-            `#invoice-entries [data-id="${entryId}"] .remove-entry-btn`
+            `#invoice-entries [data-id="${entryId}"] .remove-entry-btn`,
           )
           .addEventListener('click', () => {
             entriesToAdd.delete(entryId);
@@ -1082,7 +1085,7 @@ const InvoicesView = {
               document.getElementById('available-entries');
             if (
               availableEntriesEl.innerHTML.includes(
-                'No available billable entries'
+                'No available billable entries',
               )
             ) {
               availableEntriesEl.innerHTML = '';
@@ -1094,7 +1097,7 @@ const InvoicesView = {
                 <div style="display: flex; justify-content: space-between; align-items: start;">
                   <div>
                     <div style="font-weight: 600;">${escapeHtml(
-                      entry.description || 'No description'
+                      entry.description || 'No description',
                     )}</div>
                     <div style="font-size: 0.875rem; color: var(--color-gray-600);">
                       ${client ? escapeHtml(client.name) : 'Unknown'} • 
@@ -1111,7 +1114,7 @@ const InvoicesView = {
             // Reattach add listener
             document
               .querySelector(
-                `#available-entries [data-id="${entryId}"] .add-entry-btn`
+                `#available-entries [data-id="${entryId}"] .add-entry-btn`,
               )
               .addEventListener('click', arguments.callee);
           });
@@ -1146,7 +1149,7 @@ const InvoicesView = {
             <div style="display: flex; justify-content: space-between; align-items: start;">
               <div>
                 <div style="font-weight: 600;">${escapeHtml(
-                  entry.description || 'No description'
+                  entry.description || 'No description',
                 )}</div>
                 <div style="font-size: 0.875rem; color: var(--color-gray-600);">
                   ${client ? escapeHtml(client.name) : 'Unknown'} • 
@@ -1163,7 +1166,7 @@ const InvoicesView = {
         // Reattach add listener
         document
           .querySelector(
-            `#available-entries [data-id="${entryId}"] .add-entry-btn`
+            `#available-entries [data-id="${entryId}"] .add-entry-btn`,
           )
           .addEventListener('click', (e) => {
             e.preventDefault();
@@ -1189,7 +1192,7 @@ const InvoicesView = {
           if (entriesToAdd.size > 0) {
             await InvoiceStore.addTimeEntries(
               invoice.id,
-              Array.from(entriesToAdd)
+              Array.from(entriesToAdd),
             );
           }
 
@@ -1197,14 +1200,14 @@ const InvoicesView = {
           if (entriesToRemove.size > 0) {
             await InvoiceStore.removeTimeEntries(
               invoice.id,
-              Array.from(entriesToRemove)
+              Array.from(entriesToRemove),
             );
           }
 
           if (entriesToAdd.size > 0 || entriesToRemove.size > 0) {
             Toast.success(
               'Entries Updated',
-              'Invoice entries have been updated successfully'
+              'Invoice entries have been updated successfully',
             );
           }
 
@@ -1217,3 +1220,4 @@ const InvoicesView = {
       });
   },
 };
+
