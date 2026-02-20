@@ -507,6 +507,7 @@ const GoogleDrive = {
       isAuthorized: this.isAuthorized,
       environment: this.environment,
       folderName: this.getFolderName(),
+      appFolderId: this.appFolderId || null,
     };
   },
 };

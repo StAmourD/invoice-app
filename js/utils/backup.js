@@ -12,7 +12,6 @@ const Backup = {
   autoSaveDebounceMs: 2000, // Wait 2 seconds after last change before backing up
   isDirty: false, // Flag to track if data has changed since last backup
 
-
   /**
    * Initialize backup system
    * Load Google Drive OAuth Client ID from config or settings
@@ -21,10 +20,12 @@ const Backup = {
     try {
       // First, try to get OAuth Client ID from AppConfig (environment variable via build)
       let clientId = null;
-      
+
       if (window.AppConfig && window.AppConfig.googleOAuthClientId) {
         clientId = window.AppConfig.googleOAuthClientId;
-        console.log('Using Google OAuth Client ID from environment configuration');
+        console.log(
+          'Using Google OAuth Client ID from environment configuration',
+        );
       } else {
         // Fall back to manual configuration from settings
         clientId = await SettingsStore.get('googleOAuthClientId');
@@ -32,15 +33,15 @@ const Backup = {
           console.log('Using Google OAuth Client ID from manual configuration');
         }
       }
-      
+
       if (!clientId) {
         console.log('Google OAuth Client ID not configured');
         return;
       }
-      
+
       // Initialize Google Drive
       await GoogleDrive.init(clientId);
-      
+
       // Check if already authorized
       if (GoogleDrive.isAuthorized) {
         this.isAutoSaveEnabled = true;
@@ -52,7 +53,6 @@ const Backup = {
     }
   },
 
-
   /**
    * Connect to Google Drive
    * Shows OAuth sign-in flow
@@ -62,38 +62,38 @@ const Backup = {
     try {
       // First check for environment config
       let clientId = null;
-      
+
       if (window.AppConfig && window.AppConfig.googleOAuthClientId) {
         clientId = window.AppConfig.googleOAuthClientId;
       } else {
         // Get OAuth Client ID from settings
         clientId = await SettingsStore.get('googleOAuthClientId');
-        
+
         if (!clientId) {
           Toast.error(
             'Configuration Required',
-            'Please configure Google OAuth Client ID in Settings first'
+            'Please configure Google OAuth Client ID in Settings first',
           );
           return false;
         }
       }
-      
+
       // Initialize if not already done
       if (!GoogleDrive.isInitialized) {
         await GoogleDrive.init(clientId);
       }
-      
+
       // Request authorization
       await GoogleDrive.authorize();
-      
+
       // Ensure app folder exists
       await GoogleDrive.ensureAppFolder();
-      
+
       this.isAutoSaveEnabled = true;
-      
+
       Toast.success(
         'Connected',
-        `Auto-backup enabled to Google Drive (${GoogleDrive.getFolderName()})`
+        `Auto-backup enabled to Google Drive (${GoogleDrive.getFolderName()})`,
       );
       return true;
     } catch (error) {
@@ -162,17 +162,25 @@ const Backup = {
 
       console.log(`Auto-backup saved: ${filename}`);
 
+      // Update sidebar drive status widget
+      if (typeof App !== 'undefined') {
+        App.updateSidebarDriveStatus();
+      }
+
       // Clean up old backups based on retention setting
       await this.cleanupOldBackups();
     } catch (error) {
       console.error('Auto-backup failed:', error);
 
       // If authorization error, disable auto-save
-      if (error.message.includes('Authorization') || error.message.includes('sign in')) {
+      if (
+        error.message.includes('Authorization') ||
+        error.message.includes('sign in')
+      ) {
         this.isAutoSaveEnabled = false;
         Toast.warning(
           'Auto-Backup Disabled',
-          'Google Drive authorization expired. Please sign in again.'
+          'Google Drive authorization expired. Please sign in again.',
         );
       }
     }
@@ -193,10 +201,12 @@ const Backup = {
 
       // Get all backup files from Google Drive
       const files = await GoogleDrive.listFiles();
-      
+
       // Filter backup files by pattern: backup-YYYY-MM-DDTHH-MM-SS-sssZ.json
-      const backupFiles = files.filter(file => 
-        /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(file.name)
+      const backupFiles = files.filter((file) =>
+        /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(
+          file.name,
+        ),
       );
 
       // Sort by name (which includes timestamp) - oldest first
@@ -255,12 +265,12 @@ const Backup = {
         'settings',
       ];
       const missingProps = requiredProps.filter(
-        (prop) => !Array.isArray(data[prop])
+        (prop) => !Array.isArray(data[prop]),
       );
 
       if (missingProps.length > 0) {
         throw new Error(
-          `Invalid backup format: missing ${missingProps.join(', ')}`
+          `Invalid backup format: missing ${missingProps.join(', ')}`,
         );
       }
 
@@ -341,10 +351,7 @@ const Backup = {
   async disableAutoBackup() {
     this.isAutoSaveEnabled = false;
     await GoogleDrive.signOut();
-    Toast.info(
-      'Auto-Backup Disabled',
-      'Disconnected from Google Drive'
-    );
+    Toast.info('Auto-Backup Disabled', 'Disconnected from Google Drive');
   },
 
   /**
@@ -354,11 +361,15 @@ const Backup = {
   async getStatus() {
     const lastBackupTime = await SettingsStore.get('lastBackupTime');
     const driveStatus = GoogleDrive.getStatus();
-    
+
     // Check if client ID is from environment or manual config
-    const hasEnvConfig = !!(window.AppConfig && window.AppConfig.googleOAuthClientId);
+    const hasEnvConfig = !!(
+      window.AppConfig && window.AppConfig.googleOAuthClientId
+    );
     const manualClientId = await SettingsStore.get('googleOAuthClientId');
-    const clientId = hasEnvConfig ? window.AppConfig.googleOAuthClientId : manualClientId;
+    const clientId = hasEnvConfig
+      ? window.AppConfig.googleOAuthClientId
+      : manualClientId;
 
     return {
       isConfigured: !!clientId,
@@ -368,6 +379,7 @@ const Backup = {
       isEnabled: this.isAutoSaveEnabled,
       environment: driveStatus.environment,
       folderName: driveStatus.folderName,
+      folderId: driveStatus.appFolderId || null,
       lastBackupTime: lastBackupTime || null,
     };
   },
@@ -384,10 +396,12 @@ const Backup = {
     try {
       // Get all backup files from Google Drive
       const files = await GoogleDrive.listFiles();
-      
+
       // Filter backup files by pattern: backup-YYYY-MM-DDTHH-MM-SS-sssZ.json
-      const backupFiles = files.filter(file => 
-        /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(file.name)
+      const backupFiles = files.filter((file) =>
+        /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(
+          file.name,
+        ),
       );
 
       if (backupFiles.length === 0) {
@@ -425,10 +439,12 @@ const Backup = {
     try {
       // Get all backup files from Google Drive
       const files = await GoogleDrive.listFiles();
-      
+
       // Filter backup files by pattern: backup-YYYY-MM-DDTHH-MM-SS-sssZ.json
-      const backupFiles = files.filter(file => 
-        /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(file.name)
+      const backupFiles = files.filter((file) =>
+        /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(
+          file.name,
+        ),
       );
 
       return backupFiles.length > 0;
@@ -438,3 +454,4 @@ const Backup = {
     }
   },
 };
+
