@@ -20,7 +20,7 @@ const PDFGenerator = {
     client,
     timeEntries,
     serviceMap,
-    settings = {}
+    settings = {},
   ) {
     try {
       // Access jsPDF from global window object
@@ -119,7 +119,7 @@ const PDFGenerator = {
           margin,
           yPosition,
           contentWidth / 2,
-          { lineHeight: 4.5 }
+          { lineHeight: 4.5 },
         );
       }
       if (companyEmail) {
@@ -154,14 +154,14 @@ const PDFGenerator = {
         `Issue Date: ${formatDate(invoice.issueDate)}`,
         pageWidth - margin,
         rightColY,
-        { align: 'right' }
+        { align: 'right' },
       );
       rightColY += 4;
       doc.text(
         `Due Date: ${formatDate(invoice.dueDate)}`,
         pageWidth - margin,
         rightColY,
-        { align: 'right' }
+        { align: 'right' },
       );
 
       // Set yPosition to after the company info
@@ -192,7 +192,7 @@ const PDFGenerator = {
           margin,
           yPosition,
           contentWidth / 2,
-          { lineHeight: 4 }
+          { lineHeight: 4 },
         );
       }
       if (client.email) {
@@ -273,7 +273,7 @@ const PDFGenerator = {
         // Description (with word wrap if needed)
         const descLines = doc.splitTextToSize(
           entry.description,
-          colWidths.description - 4
+          colWidths.description - 4,
         );
         const rowHeight = Math.max(10, descLines.length * 5);
 
@@ -297,7 +297,7 @@ const PDFGenerator = {
           formatCurrency(amount),
           xPos + colWidths.amount - 2,
           yPosition + 3,
-          { align: 'right' }
+          { align: 'right' },
         );
 
         yPosition += rowHeight;
@@ -319,7 +319,7 @@ const PDFGenerator = {
         formatCurrency(invoice.total),
         totalX + colWidths.amount - 2,
         yPosition,
-        { align: 'right' }
+        { align: 'right' },
       );
       yPosition += 15;
 
@@ -346,7 +346,7 @@ const PDFGenerator = {
       // Generate filename
       const dateStr = formatDateForInput(new Date());
       const filename = sanitizeFilename(
-        `${companyName}-${invoice.invoiceNumber}-${dateStr}`
+        `${companyName}_${invoice.invoiceNumber}_${dateStr}`,
       );
 
       // Save the PDF
@@ -359,3 +359,4 @@ const PDFGenerator = {
     }
   },
 };
+
