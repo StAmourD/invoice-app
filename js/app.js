@@ -37,19 +37,25 @@ const App = {
         console.log('Database is empty, checking for backup options...');
         await this.handleEmptyDatabase();
       } else {
-        // Database has data, but check if user is signed in to load latest backup
+        // Database has data - merge the latest Drive backup so any records
+        // added while offline are preserved alongside Drive changes.
         if (GoogleDrive.isAuthorized) {
-          console.log('User is signed in, loading latest backup...');
-          this.showLoadingScreen('Loading latest backup from Google Drive...');
+          console.log(
+            'User is signed in, merging latest backup from Google Drive...',
+          );
+          this.showLoadingScreen('Syncing data from Google Drive...');
           try {
-            await Backup.loadLatestBackup();
-            Toast.success(
-              'Backup Loaded',
-              'Latest data loaded from Google Drive',
-            );
+            const mergeResult = await Backup.mergeFromDrive();
+            const total = mergeResult.added + mergeResult.updated;
+            if (total > 0) {
+              Toast.success(
+                'Data Synced',
+                `${total} record${total !== 1 ? 's' : ''} synced from Google Drive`,
+              );
+            }
           } catch (error) {
-            console.error('Failed to load latest backup:', error);
-            // Don't show error toast - user already has data
+            console.error('Failed to merge from Google Drive:', error);
+            // Non-fatal - user already has local data
           }
         }
       }

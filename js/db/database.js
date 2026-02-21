@@ -206,6 +206,68 @@ const Database = {
   },
 
   /**
+   * Merge items from a Drive backup into a local store.
+   * For each incoming item:
+   *   - If not present locally → insert it (counted as added)
+   *   - If present locally → replace only when the Drive record has a newer updatedAt (counted as updated)
+   *   - Items that exist only locally are left untouched
+   *
+   * Uses store.put() directly to bypass store-level add/update helpers and
+   * avoid triggering autoSave during the merge.
+   *
+   * @param {string} storeName - The IDB store name
+   * @param {Array<object>} driveItems - Records from the Drive backup
+   * @returns {Promise<{added: number, updated: number}>}
+   */
+  mergeStore(storeName, driveItems) {
+    return new Promise((resolve, reject) => {
+      const db = this.getDB();
+      const transaction = db.transaction([storeName], 'readwrite');
+      const store = transaction.objectStore(storeName);
+
+      let added = 0;
+      let updated = 0;
+
+      transaction.oncomplete = () => resolve({ added, updated });
+      transaction.onerror = (event) => reject(event.target.error);
+      transaction.onabort = (event) => reject(event.target.error);
+
+      const getAllRequest = store.getAll();
+
+      getAllRequest.onsuccess = () => {
+        const localMap = new Map(
+          getAllRequest.result.map((item) => [item.id, item]),
+        );
+
+        for (const driveItem of driveItems) {
+          const local = localMap.get(driveItem.id);
+
+          if (!local) {
+            // Record only exists on Drive → add to local
+            store.put(driveItem);
+            added++;
+          } else {
+            // Record exists locally → keep the newer version
+            const driveTime = driveItem.updatedAt
+              ? new Date(driveItem.updatedAt)
+              : null;
+            const localTime = local.updatedAt
+              ? new Date(local.updatedAt)
+              : null;
+
+            if (driveTime && (!localTime || driveTime > localTime)) {
+              store.put(driveItem);
+              updated++;
+            }
+          }
+        }
+      };
+
+      getAllRequest.onerror = (event) => reject(event.target.error);
+    });
+  },
+
+  /**
    * Check if the database is empty (no clients, services, or invoices)
    * @returns {Promise<boolean>}
    */
@@ -213,7 +275,10 @@ const Database = {
     const clients = await ClientStore.getAll();
     const services = await ServiceStore.getAll();
     const invoices = await InvoiceStore.getAll();
-    
-    return clients.length === 0 && services.length === 0 && invoices.length === 0;
+
+    return (
+      clients.length === 0 && services.length === 0 && invoices.length === 0
+    );
   },
 };
+

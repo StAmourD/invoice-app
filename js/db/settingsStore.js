@@ -31,17 +31,44 @@ const SettingsStore = {
   },
 
   /**
+   * Get the full raw setting record including metadata such as updatedAt
+   * @param {string} key - Setting key
+   * @returns {Promise<{key: string, value: any, updatedAt: string}|null>}
+   */
+  getFull(key) {
+    return new Promise((resolve, reject) => {
+      const db = Database.getDB();
+      const transaction = db.transaction([this.STORE_NAME], 'readonly');
+      const store = transaction.objectStore(this.STORE_NAME);
+      const request = store.get(key);
+
+      request.onsuccess = () => {
+        resolve(request.result || null);
+      };
+
+      request.onerror = (event) => {
+        reject(event.target.error);
+      };
+    });
+  },
+
+  /**
    * Set a setting value
    * @param {string} key - Setting key
    * @param {any} value - Setting value
+   * @param {string|null} updatedAt - Optional ISO timestamp; defaults to now
    * @returns {Promise<void>}
    */
-  set(key, value) {
+  set(key, value, updatedAt = null) {
     return new Promise((resolve, reject) => {
       const db = Database.getDB();
       const transaction = db.transaction([this.STORE_NAME], 'readwrite');
       const store = transaction.objectStore(this.STORE_NAME);
-      const request = store.put({ key, value });
+      const request = store.put({
+        key,
+        value,
+        updatedAt: updatedAt || getISOTimestamp(),
+      });
 
       request.onsuccess = () => {
         // Trigger backup on settings change
@@ -106,3 +133,4 @@ const SettingsStore = {
     return result;
   },
 };
+

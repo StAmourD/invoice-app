@@ -12,6 +12,17 @@ const Backup = {
   autoSaveDebounceMs: 2000, // Wait 2 seconds after last change before backing up
   isDirty: false, // Flag to track if data has changed since last backup
 
+  // Settings keys that are merged from Drive when timestamps are compared.
+  // All other settings (auth tokens, OAuth IDs, etc.) always favour local.
+  MERGEABLE_SETTING_KEYS: [
+    'companyAddress',
+    'companyEmail',
+    'companyLogo',
+    'companyName',
+    'lastBackupTime',
+    'maxBackups',
+  ],
+
   /**
    * Initialize backup system
    * Load Google Drive OAuth Client ID from config or settings
@@ -95,6 +106,22 @@ const Backup = {
         'Connected',
         `Auto-backup enabled to Google Drive (${GoogleDrive.getFolderName()})`,
       );
+
+      // Merge the latest Drive backup into local data
+      try {
+        const mergeResult = await this.mergeFromDrive();
+        const total = mergeResult.added + mergeResult.updated;
+        if (total > 0) {
+          Toast.success(
+            'Data Synced',
+            `${total} record${total !== 1 ? 's' : ''} synced from Google Drive (${mergeResult.added} added, ${mergeResult.updated} updated)`,
+          );
+        }
+      } catch (mergeError) {
+        console.warn('Merge after connect failed:', mergeError);
+        // Non-fatal – connection was still successful
+      }
+
       return true;
     } catch (error) {
       console.error('Failed to connect to Google Drive:', error);
@@ -423,6 +450,103 @@ const Backup = {
       return true;
     } catch (error) {
       console.error('Failed to load backup from Google Drive:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Merge the latest Drive backup into local IndexedDB without deleting local data.
+   *
+   * Strategy (per record):
+   *   - Drive record not in local   → inserted into local (added)
+   *   - Same ID in both             → keep the version with the newer updatedAt (updated)
+   *   - Local record not in Drive   → left untouched (kept – added while offline)
+   *
+   * For settings only MERGEABLE_SETTING_KEYS are considered; all other setting
+   * keys (OAuth tokens, Client IDs, etc.) always favour local.
+   *
+   * @returns {Promise<{added: number, updated: number}>}
+   */
+  async mergeFromDrive() {
+    if (!GoogleDrive.isAuthorized) {
+      throw new Error('Not authorized to access Google Drive');
+    }
+
+    try {
+      // Find the most recent backup file
+      const files = await GoogleDrive.listFiles();
+      const backupFiles = files.filter((file) =>
+        /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(
+          file.name,
+        ),
+      );
+
+      if (backupFiles.length === 0) {
+        console.log('mergeFromDrive: no backup files found in Google Drive');
+        return { added: 0, updated: 0 };
+      }
+
+      // Most recent first
+      backupFiles.sort((a, b) => b.name.localeCompare(a.name));
+      const latestBackup = backupFiles[0];
+
+      console.log(`mergeFromDrive: merging from ${latestBackup.name}`);
+
+      const content = await GoogleDrive.downloadFile(latestBackup.id);
+      const data = JSON.parse(content);
+
+      let totalAdded = 0;
+      let totalUpdated = 0;
+
+      // Merge data stores
+      const dataStores = [
+        { name: 'clients', items: data.clients },
+        { name: 'services', items: data.services },
+        { name: 'timeEntries', items: data.timeEntries },
+        { name: 'invoices', items: data.invoices },
+      ];
+
+      for (const { name, items } of dataStores) {
+        if (!Array.isArray(items) || items.length === 0) continue;
+        const result = await Database.mergeStore(name, items);
+        totalAdded += result.added;
+        totalUpdated += result.updated;
+      }
+
+      // Merge selected settings (timestamp-aware)
+      if (Array.isArray(data.settings)) {
+        for (const driveSetting of data.settings) {
+          if (!this.MERGEABLE_SETTING_KEYS.includes(driveSetting.key)) continue;
+
+          const localRecord = await SettingsStore.getFull(driveSetting.key);
+          const driveTime = driveSetting.updatedAt
+            ? new Date(driveSetting.updatedAt)
+            : null;
+          const localTime = localRecord?.updatedAt
+            ? new Date(localRecord.updatedAt)
+            : null;
+
+          const driveShouldWin =
+            !localRecord ||
+            (driveTime && (!localTime || driveTime > localTime));
+
+          if (driveShouldWin) {
+            // Preserve the original Drive timestamp so future merges stay consistent
+            await SettingsStore.set(
+              driveSetting.key,
+              driveSetting.value,
+              driveSetting.updatedAt || null,
+            );
+          }
+        }
+      }
+
+      console.log(
+        `mergeFromDrive complete: ${totalAdded} added, ${totalUpdated} updated`,
+      );
+      return { added: totalAdded, updated: totalUpdated };
+    } catch (error) {
+      console.error('mergeFromDrive failed:', error);
       throw error;
     }
   },
