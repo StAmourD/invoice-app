@@ -678,8 +678,22 @@ const App = {
           <div class="sidebar-drive-header">☁ Google Drive</div>
           <div class="sidebar-drive-status-badge connected">Connected</div>
           ${lastSavedHtml}
+          <button class="sidebar-drive-save-btn" id="sidebar-save-now-btn">Save Now</button>
         </div>
       `;
+      document
+        .getElementById('sidebar-save-now-btn')
+        .addEventListener('click', async () => {
+          const btn = document.getElementById('sidebar-save-now-btn');
+          btn.disabled = true;
+          btn.textContent = 'Saving…';
+          try {
+            await Backup.saveNow();
+          } finally {
+            btn.disabled = false;
+            btn.textContent = 'Save Now';
+          }
+        });
     } else {
       container.innerHTML = `
         <div class="sidebar-drive-widget">

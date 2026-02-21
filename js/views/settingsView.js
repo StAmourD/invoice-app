@@ -92,7 +92,7 @@ const SettingsView = {
                   rows="3"
                   placeholder="123 Main St, City, State ZIP"
                 >${escapeHtml(
-                  this.companySettings.companyAddress || ''
+                  this.companySettings.companyAddress || '',
                 )}</textarea>
               </div>
 
@@ -173,8 +173,8 @@ const SettingsView = {
 
     // Determine if Client ID is from environment or manual config
     const isEnvConfig = this.backupStatus.configSource === 'environment';
-    const configSourceLabel = isEnvConfig 
-      ? '<span class="badge badge-success">From Environment</span>' 
+    const configSourceLabel = isEnvConfig
+      ? '<span class="badge badge-success">From Environment</span>'
       : '<span class="badge badge-info">Manual Configuration</span>';
 
     // Google Drive OAuth Configuration Section
@@ -192,9 +192,11 @@ const SettingsView = {
           ${isEnvConfig ? 'readonly disabled' : ''}
         />
         <small class="form-text">
-          ${isEnvConfig 
-            ? 'Configured via environment variable (read-only). ' 
-            : 'Required for Google Drive backup. See README for setup instructions. '}
+          ${
+            isEnvConfig
+              ? 'Configured via environment variable (read-only). '
+              : 'Required for Google Drive backup. See README for setup instructions. '
+          }
           Environment: <strong>${this.backupStatus.environment || 'unknown'}</strong>
         </small>
       </div>
@@ -206,9 +208,11 @@ const SettingsView = {
       return `
         <div class="alert alert-warning">
           <strong>Configuration Required</strong>
-          <p>${isEnvConfig 
-            ? 'Set GOOGLE_OAUTH_CLIENT_ID environment variable and rebuild to enable Google Drive backups.' 
-            : 'Configure your Google OAuth Client ID to enable Google Drive backups.'}</p>
+          <p>${
+            isEnvConfig
+              ? 'Set GOOGLE_OAUTH_CLIENT_ID environment variable and rebuild to enable Google Drive backups.'
+              : 'Configure your Google OAuth Client ID to enable Google Drive backups.'
+          }</p>
         </div>
 
         ${configSection}
@@ -230,7 +234,7 @@ const SettingsView = {
         <div class="alert alert-success">
           <strong>Connected to Google Drive</strong>
           <p>Automatic backups enabled to folder: <strong>${escapeHtml(
-            this.backupStatus.folderName
+            this.backupStatus.folderName,
           )}</strong></p>
           <p style="margin-bottom: 0;">Environment: <strong>${this.backupStatus.environment}</strong></p>
         </div>
@@ -256,8 +260,7 @@ const SettingsView = {
         </div>
 
         <div class="backup-actions">
-          <button class="btn btn-primary" id="save-backup-settings-btn">Save Settings</button>
-          <button class="btn btn-success" id="load-drive-backup-btn">Load from Google Drive</button>
+          <button class="btn btn-primary" id="save-backup-settings-btn">Save Settings</button>          <button class="btn btn-success" id="save-now-btn">Save Now to Google Drive</button>          <button class="btn btn-success" id="load-drive-backup-btn">Load from Google Drive</button>
           <button class="btn btn-danger" id="disconnect-drive-btn">Sign Out & Disconnect</button>
           <button class="btn btn-primary" id="manual-backup-btn">Download Backup</button>
           <button class="btn btn-secondary" id="manual-restore-btn">Restore from Backup</button>
@@ -321,7 +324,9 @@ const SettingsView = {
     }
 
     // OAuth config buttons
-    const saveOAuthConfigBtn = container.querySelector('#save-oauth-config-btn');
+    const saveOAuthConfigBtn = container.querySelector(
+      '#save-oauth-config-btn',
+    );
     if (saveOAuthConfigBtn) {
       saveOAuthConfigBtn.addEventListener('click', async () => {
         await this.saveOAuthConfig();
@@ -344,7 +349,23 @@ const SettingsView = {
     }
 
     // Load from Google Drive button
-    const loadDriveBackupBtn = container.querySelector('#load-drive-backup-btn');
+    const saveNowBtn = container.querySelector('#save-now-btn');
+    if (saveNowBtn) {
+      saveNowBtn.addEventListener('click', async () => {
+        saveNowBtn.disabled = true;
+        saveNowBtn.textContent = 'Saving…';
+        try {
+          await Backup.saveNow();
+        } finally {
+          saveNowBtn.disabled = false;
+          saveNowBtn.textContent = 'Save Now to Google Drive';
+        }
+      });
+    }
+
+    const loadDriveBackupBtn = container.querySelector(
+      '#load-drive-backup-btn',
+    );
     if (loadDriveBackupBtn) {
       loadDriveBackupBtn.addEventListener('click', async () => {
         await this.loadFromGoogleDrive();
@@ -353,7 +374,7 @@ const SettingsView = {
 
     // Save backup settings button
     const saveBackupSettingsBtn = container.querySelector(
-      '#save-backup-settings-btn'
+      '#save-backup-settings-btn',
     );
     if (saveBackupSettingsBtn) {
       saveBackupSettingsBtn.addEventListener('click', async () => {
@@ -406,7 +427,7 @@ const SettingsView = {
 
       Toast.success(
         'Settings Saved',
-        'Company information updated successfully'
+        'Company information updated successfully',
       );
     } catch (error) {
       console.error('Failed to save company info:', error);
@@ -425,7 +446,7 @@ const SettingsView = {
     if (!supportedTypes.includes(file.type)) {
       Toast.error(
         'Invalid File',
-        'Please select a JPEG, PNG, or GIF image file'
+        'Please select a JPEG, PNG, or GIF image file',
       );
       return;
     }
@@ -477,7 +498,9 @@ const SettingsView = {
    */
   async saveOAuthConfig() {
     try {
-      const clientId = document.getElementById('google-oauth-client-id').value.trim();
+      const clientId = document
+        .getElementById('google-oauth-client-id')
+        .value.trim();
 
       if (!clientId) {
         Toast.error('Validation Error', 'OAuth Client ID is required');
@@ -485,12 +508,12 @@ const SettingsView = {
       }
 
       await SettingsStore.set('googleOAuthClientId', clientId);
-      
+
       Toast.success(
         'Configuration Saved',
-        'Google OAuth Client ID saved. You can now connect to Google Drive.'
+        'Google OAuth Client ID saved. You can now connect to Google Drive.',
       );
-      
+
       // Refresh view
       App.refresh();
     } catch (error) {
@@ -554,7 +577,7 @@ const SettingsView = {
       await SettingsStore.set('maxBackups', maxBackups);
       Toast.success(
         'Settings Saved',
-        `Maximum backups set to ${maxBackups === 0 ? 'unlimited' : maxBackups}`
+        `Maximum backups set to ${maxBackups === 0 ? 'unlimited' : maxBackups}`,
       );
     } catch (error) {
       console.error('Failed to save backup settings:', error);
@@ -593,7 +616,7 @@ const SettingsView = {
           App.hideLoadingScreen();
           Toast.success(
             'Restore Complete',
-            'Data has been restored. Refreshing app...'
+            'Data has been restored. Refreshing app...',
           );
 
           // Refresh the app after short delay
@@ -625,7 +648,7 @@ const SettingsView = {
           await Database.clearAll();
           Toast.success(
             'Data Cleared',
-            'All data has been deleted. Refreshing app...'
+            'All data has been deleted. Refreshing app...',
           );
 
           // Refresh the app after short delay
@@ -656,11 +679,11 @@ const SettingsView = {
           App.showLoadingScreen('Loading backup from Google Drive...');
           const loaded = await Backup.loadLatestBackup();
           App.hideLoadingScreen();
-          
+
           if (loaded) {
             Toast.success(
               'Backup Loaded',
-              'Data has been restored. Refreshing app...'
+              'Data has been restored. Refreshing app...',
             );
 
             // Refresh the app after short delay
@@ -668,7 +691,10 @@ const SettingsView = {
               window.location.reload();
             }, 1500);
           } else {
-            Toast.info('No Backup Found', 'No backup files found in Google Drive');
+            Toast.info(
+              'No Backup Found',
+              'No backup files found in Google Drive',
+            );
           }
         } catch (error) {
           console.error('Failed to load backup from Google Drive:', error);
@@ -679,3 +705,4 @@ const SettingsView = {
     });
   },
 };
+

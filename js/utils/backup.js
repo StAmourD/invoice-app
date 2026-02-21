@@ -131,6 +131,35 @@ const Backup = {
   },
 
   /**
+   * Immediately save to Google Drive, bypassing the debounce timer.
+   * @returns {Promise<boolean>} True on success, false on failure
+   */
+  async saveNow() {
+    if (!GoogleDrive.isAuthorized) {
+      Toast.error('Not Connected', 'Connect to Google Drive first.');
+      return false;
+    }
+
+    // Cancel any pending debounced save
+    if (this.autoSaveTimeout) {
+      clearTimeout(this.autoSaveTimeout);
+      this.autoSaveTimeout = null;
+    }
+
+    // Mark dirty so performAutoSave won't skip
+    this.isDirty = true;
+
+    try {
+      await this.performAutoSave();
+      Toast.success('Saved', 'Data saved to Google Drive.');
+      return true;
+    } catch (error) {
+      Toast.error('Save Failed', error.message);
+      return false;
+    }
+  },
+
+  /**
    * Auto-save data to backup folder (debounced)
    * Called automatically after every data change
    * Waits for 2 seconds of inactivity before actually saving
