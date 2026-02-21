@@ -191,7 +191,8 @@ const TimeEntriesView = {
         key: 'description',
         label: 'Description',
         sortable: false,
-        render: (entry) => escapeHtml(entry.description || ''),
+        render: (entry) =>
+          `<span style="white-space: pre-line;">${escapeHtml(entry.description || '')}</span>`,
       },
       {
         key: 'hours',

@@ -198,7 +198,7 @@ const ReportsView = {
           <td>${formatDate(entry.startDate)}</td>
           <td>${escapeHtml(client?.name || 'Unknown')}</td>
           <td>${escapeHtml(service?.name || 'Unknown')}</td>
-          <td>${escapeHtml(entry.description)}</td>
+          <td style="white-space: pre-line;">${escapeHtml(entry.description || '')}</td>
           <td>${formatHours(hours)}</td>
           <td>${formatCurrency(rate)}</td>
           <td>${formatCurrency(amount)}</td>
@@ -505,7 +505,7 @@ const ReportsView = {
       this.timeFilters.billableStatus =
         container.querySelector('#time-billable').value;
       this.timeFilters.invoiceStatus = container.querySelector(
-        '#time-invoice-status'
+        '#time-invoice-status',
       ).value;
 
       container.querySelector('#time-report-results').innerHTML =
@@ -537,12 +537,12 @@ const ReportsView = {
 
     applyBtn.addEventListener('click', () => {
       this.invoiceFilters.startDate = container.querySelector(
-        '#invoice-start-date'
+        '#invoice-start-date',
       ).value;
       this.invoiceFilters.clientId =
         container.querySelector('#invoice-client').value;
       this.invoiceFilters.paidStatus = container.querySelector(
-        '#invoice-paid-status'
+        '#invoice-paid-status',
       ).value;
 
       container.querySelector('#invoice-report-results').innerHTML =
@@ -647,3 +647,4 @@ const ReportsView = {
     exportToCSV(exportData, columns, 'invoice-report');
   },
 };
+
