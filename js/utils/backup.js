@@ -544,6 +544,18 @@ const Backup = {
       console.log(
         `mergeFromDrive complete: ${totalAdded} added, ${totalUpdated} updated`,
       );
+
+      // If any records were merged, immediately save the unified dataset back to
+      // Google Drive so it reflects both the Drive changes and any local-only
+      // additions that were previously missing from the backup.
+      if (totalAdded + totalUpdated > 0) {
+        this.isDirty = true;
+        await this.performAutoSave();
+        console.log(
+          'mergeFromDrive: saved merged dataset back to Google Drive',
+        );
+      }
+
       return { added: totalAdded, updated: totalUpdated };
     } catch (error) {
       console.error('mergeFromDrive failed:', error);
