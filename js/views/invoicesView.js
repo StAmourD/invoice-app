@@ -758,6 +758,7 @@ const InvoicesView = {
                     <table class="table">
                         <thead>
                             <tr>
+                                <th>Date</th>
                                 <th>Description</th>
                                 <th>Service</th>
                                 <th class="number">Hours</th>
@@ -776,6 +777,7 @@ const InvoicesView = {
                                 const amount = hours * rate;
                                 return `
                                     <tr>
+                                        <td style="white-space: nowrap;">${formatDate(entry.startDate)}</td>
                                         <td style="white-space: pre-line;">${escapeHtml(
                                           entry.description || 'No description',
                                         )}</td>
@@ -811,6 +813,51 @@ const InvoicesView = {
 
                 <div class="invoice-footer no-print" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--color-gray-200); color: var(--color-gray-600); font-size: 0.875rem;">
                     <p>Payment due within ${client.daysToPay} days.</p>
+                </div>
+            </div>
+
+            <div class="card no-print" style="margin-top: 2rem;">
+                <div class="card-header">
+                    <h3 class="card-title">Email Template</h3>
+                </div>
+                <div style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+
+                    <div>
+                        <label class="form-label" style="margin-bottom: 0.25rem;">Client Email</label>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <input type="text" class="form-input" id="email-client-address" readonly
+                                value="${escapeHtml(client.email || '')}"
+                                style="flex: 1; background: var(--color-gray-50); cursor: text;">
+                            <button class="btn btn-secondary copy-btn" data-target="email-client-address">Copy</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label" style="margin-bottom: 0.25rem;">Subject</label>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <input type="text" class="form-input" id="email-subject" readonly
+                                value="${escapeHtml(settings.companyName || 'My Company')} Invoice ${escapeHtml(invoice.invoiceNumber)}${invoice.version ? '-' + invoice.version : ''}"
+                                style="flex: 1; background: var(--color-gray-50); cursor: text;">
+                            <button class="btn btn-secondary copy-btn" data-target="email-subject">Copy</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label" style="margin-bottom: 0.25rem;">Body</label>
+                        <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                            <textarea class="form-input" id="email-body" readonly rows="8"
+                                style="flex: 1; background: var(--color-gray-50); cursor: text; resize: vertical; font-family: inherit;">Hello,
+
+I've attached invoice ${escapeHtml(invoice.invoiceNumber)}${invoice.version ? '-' + invoice.version : ''}. The total comes to ${formatCurrency(invoice.total)}, due by ${formatDate(invoice.dueDate)}.
+
+I appreciate your business. If anything needs clarification, just let me know.
+
+Thanks again,
+${escapeHtml(settings.companyName || '')}</textarea>
+                            <button class="btn btn-secondary copy-btn" data-target="email-body">Copy</button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         `;
@@ -856,6 +903,34 @@ const InvoicesView = {
 
     document.getElementById('print-btn').addEventListener('click', () => {
       window.print();
+    });
+
+    // Copy buttons for email template
+    container.querySelectorAll('.copy-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const el = document.getElementById(targetId);
+        const text = el.value;
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            const original = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.classList.add('btn-success');
+            btn.classList.remove('btn-secondary');
+            setTimeout(() => {
+              btn.textContent = original;
+              btn.classList.remove('btn-success');
+              btn.classList.add('btn-secondary');
+            }, 1500);
+          })
+          .catch(() => {
+            // Fallback for browsers without clipboard API
+            el.select();
+            document.execCommand('copy');
+            Toast.success('Copied', 'Text copied to clipboard');
+          });
+      });
     });
   },
 
