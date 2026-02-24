@@ -207,7 +207,7 @@ const Backup = {
 
       // Generate filename with timestamp
       const timestamp = getISOTimestamp().replace(/[:.]/g, '-');
-      const filename = `backup-${timestamp}.json`;
+      const filename = `invoice-app-backup-${timestamp}.json`;
 
       // Upload to Google Drive
       await GoogleDrive.uploadFile(filename, jsonString, 'application/json');
@@ -260,7 +260,7 @@ const Backup = {
 
       // Filter backup files by pattern: backup-YYYY-MM-DDTHH-MM-SS-sssZ.json
       const backupFiles = files.filter((file) =>
-        /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(
+        /^invoice-app-backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.json$/.test(
           file.name,
         ),
       );
@@ -350,7 +350,7 @@ const Backup = {
     try {
       const jsonData = await this.exportData();
       const timestamp = getISOTimestamp().replace(/[:.]/g, '-');
-      const filename = `backup-${timestamp}.json`;
+      const filename = `invoice-app-backup-${timestamp}.json`;
 
       const blob = new Blob([jsonData], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
